@@ -575,6 +575,19 @@
             font-size: 2.6rem;
             margin-bottom: 8px;
         }
+        .product-card .product-img {
+            width: 100%;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            background: var(--gray-100);
+        }
+        .product-card .manage-actions {
+            margin-top: 8px;
+            padding-top: 10px;
+            border-top: 1px dashed var(--gray-200);
+        }
         .product-card .name {
             font-weight: 600;
             font-size: 1rem;
@@ -1041,17 +1054,17 @@
             <div class="subtitle">Sign in to manage your sales</div>
             <form id="loginForm" autocomplete="off">
                 <div class="form-group">
-                    <label for="usernameInput">Username</label>
-                    <input type="text" id="usernameInput" placeholder="Enter username" value="admin" />
+                    <label for="usernameInput">Email</label>
+                    <input type="email" id="usernameInput" placeholder="you@example.com" autocomplete="username" />
                 </div>
                 <div class="form-group">
                     <label for="passwordInput">Password</label>
-                    <input type="password" id="passwordInput" placeholder="Enter password" value="password" />
+                    <input type="password" id="passwordInput" placeholder="Enter password" autocomplete="current-password" />
                 </div>
                 <button type="submit" class="btn btn-primary"><i class="fas fa-sign-in-alt"></i> Sign In</button>
                 <div class="error-msg" id="loginError"></div>
                 <div class="demo-hint">
-                    <i class="fas fa-info-circle"></i> Demo: <code>admin / password</code>
+                    <i class="fas fa-shield-halved"></i> Secured by <code>Amazon Cognito</code>
                 </div>
             </form>
         </div>
@@ -1143,6 +1156,7 @@
                                 <option value="Books">Books</option>
                                 <option value="Toys">Toys</option>
                             </select>
+                            <button class="btn btn-primary" id="addProductBtn"><i class="fas fa-plus"></i> Add Product</button>
                         </div>
                     </div>
                     <div class="product-grid" id="productGrid"></div>
@@ -1244,12 +1258,88 @@
         </div>
     </div>
 
+    <!-- ===== PRODUCT CREATE/EDIT MODAL ===== -->
+    <div class="modal-overlay" id="productModal">
+        <div class="modal">
+            <h2 id="productModalTitle"><i class="fas fa-plus-circle" style="color:var(--primary);margin-right:10px;"></i>Add Product</h2>
+            <p>Stored in <b>DynamoDB</b> — images upload to <b>S3</b>.</p>
+            <form id="productForm" autocomplete="off">
+                <input type="hidden" id="productIdInput" />
+                <div class="form-group" style="margin-bottom:14px;">
+                    <label for="productNameInput">Name</label>
+                    <input type="text" id="productNameInput" placeholder="Product name" required
+                        style="width:100%;padding:12px 14px;border:1px solid var(--gray-200);border-radius:8px;font-size:0.95rem;outline:none;background:var(--gray-50);" />
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div class="form-group" style="margin-bottom:14px;">
+                        <label for="productCategoryInput">Category</label>
+                        <select id="productCategoryInput"
+                            style="width:100%;padding:12px 14px;border:1px solid var(--gray-200);border-radius:8px;font-size:0.95rem;background:var(--gray-50);">
+                            <option>Electronics</option>
+                            <option>Clothing</option>
+                            <option>Home</option>
+                            <option>Books</option>
+                            <option>Toys</option>
+                            <option>Misc</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="margin-bottom:14px;">
+                        <label for="productEmojiInput">Emoji</label>
+                        <input type="text" id="productEmojiInput" placeholder="📦" maxlength="4"
+                            style="width:100%;padding:12px 14px;border:1px solid var(--gray-200);border-radius:8px;font-size:0.95rem;outline:none;background:var(--gray-50);" />
+                    </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+                    <div class="form-group" style="margin-bottom:14px;">
+                        <label for="productPriceInput">Price ($)</label>
+                        <input type="number" id="productPriceInput" placeholder="0.00" min="0" step="0.01" required
+                            style="width:100%;padding:12px 14px;border:1px solid var(--gray-200);border-radius:8px;font-size:0.95rem;outline:none;background:var(--gray-50);" />
+                    </div>
+                    <div class="form-group" style="margin-bottom:14px;">
+                        <label for="productStockInput">Stock</label>
+                        <input type="number" id="productStockInput" placeholder="0" min="0" step="1" required
+                            style="width:100%;padding:12px 14px;border:1px solid var(--gray-200);border-radius:8px;font-size:0.95rem;outline:none;background:var(--gray-50);" />
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom:14px;">
+                    <label for="productImageInput">Image (optional — uploaded to S3)</label>
+                    <input type="file" id="productImageInput" accept="image/png,image/jpeg,image/webp,image/gif"
+                        style="width:100%;padding:8px;font-size:0.85rem;color:var(--gray-600);" />
+                </div>
+                <div style="color:var(--danger);font-size:0.85rem;min-height:1.2rem;margin-bottom:10px;" id="productError"></div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" id="productModalCancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="productModalSave"><i class="fas fa-save"></i> Save Product</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== CONFIRM DELETE MODAL ===== -->
+    <div class="modal-overlay" id="confirmModal">
+        <div class="modal">
+            <h2><i class="fas fa-trash-alt" style="color:var(--danger);margin-right:10px;"></i>Delete Product</h2>
+            <p id="confirmModalText">Are you sure?</p>
+            <div class="modal-actions">
+                <button class="btn btn-outline" id="confirmCancel">Cancel</button>
+                <button class="btn btn-danger" id="confirmOk"><i class="fas fa-trash-alt"></i> Delete</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ===== TOAST CONTAINER ===== -->
     <div class="toast-container" id="toastContainer"></div>
 
     <!-- ============================================================ -->
     <!-- ===== JAVASCRIPT ===== -->
+    <!-- config.js must load first: if apiBaseUrl is set, the AWS mode -->
+    <!-- in ap.js drives the app; otherwise the local demo below runs -->
+    <script src="config.js"></script>
     <script>
+        if (window.NOVA_CONFIG && window.NOVA_CONFIG.apiBaseUrl) {
+            // AWS mode — ap.js (loaded after this block) owns the app.
+            console.log('☁️ NovaShop AWS mode — handled by ap.js.');
+        } else {
         (function() {
             'use strict';
 
@@ -1775,7 +1865,9 @@
             console.log(`📦 ${products.length} products, 🛍️ ${cart.length} cart items, 📋 ${orders.length} orders.`);
 
         })();
+        } // end local-demo branch
     </script>
+    <script src="ap.js"></script>
 
 </body>
 </html>

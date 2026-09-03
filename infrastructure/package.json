@@ -1,0 +1,20 @@
+{
+  "name": "novashop-infrastructure",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AWS CDK app for the NovaShop serverless backend (Cognito, API Gateway, Lambda, DynamoDB, S3)",
+  "main": "bin/app.js",
+  "scripts": {
+    "synth": "cdk synth",
+    "diff": "cdk diff",
+    "deploy": "cdk deploy",
+    "destroy": "cdk destroy"
+  },
+  "devDependencies": {
+    "aws-cdk": "^2.100.0"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.100.0",
+    "constructs": "^10.0.0"
+  }
+}

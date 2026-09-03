@@ -8,10 +8,17 @@
     'use strict';
 
     // ============================================================
-    //  CONFIGURATION
+    //  CONFIGURATION (set in frontend/config.js after `sam deploy`)
     // ============================================================
-    const API_BASE = 'https://your-api-id.execute-api.region.amazonaws.com/prod'; // CHANGE THIS
-    let authToken = null;
+    const CFG = window.NOVA_CONFIG || {};
+    const API_BASE = CFG.apiBaseUrl || '';
+    const COGNITO_REGION = CFG.region || (CFG.userPoolId || '').split('_')[0] || '';
+    const COGNITO_CLIENT_ID = CFG.clientId || '';
+    const COGNITO_ENDPOINT = `https://cognito-idp.${COGNITO_REGION}.amazonaws.com/`;
+
+    let authToken = null;       // Cognito ID token (JWT) — sent as Bearer
+    let refreshToken = null;    // used for silent re-auth
+    let tokenExpiresAt = 0;     // epoch ms
 
     // ============================================================
     //  STATE
@@ -69,6 +76,28 @@
 
     const toastContainer = $('#toastContainer');
 
+    // Product CRUDL modal refs
+    const addProductBtn = $('#addProductBtn');
+    const productModal = $('#productModal');
+    const productModalTitle = $('#productModalTitle');
+    const productForm = $('#productForm');
+    const productIdInput = $('#productIdInput');
+    const productNameInput = $('#productNameInput');
+    const productCategoryInput = $('#productCategoryInput');
+    const productEmojiInput = $('#productEmojiInput');
+    const productPriceInput = $('#productPriceInput');
+    const productStockInput = $('#productStockInput');
+    const productImageInput = $('#productImageInput');
+    const productError = $('#productError');
+    const productModalCancel = $('#productModalCancel');
+    const productModalSave = $('#productModalSave');
+
+    // Delete confirmation modal refs
+    const confirmModal = $('#confirmModal');
+    const confirmModalText = $('#confirmModalText');
+    const confirmCancel = $('#confirmCancel');
+    const confirmOk = $('#confirmOk');
+
     // ============================================================
     //  TOAST NOTIFICATIONS
     // ============================================================
@@ -97,7 +126,11 @@
                 const parsed = JSON.parse(saved);
                 if (parsed.cart) cart = parsed.cart;
                 if (parsed.currentUser) currentUser = parsed.currentUser;
-                if (parsed.authToken) authToken = parsed.authToken;
+                if (parsed.session) {
+                    authToken = parsed.session.idToken;
+                    refreshToken = parsed.session.refreshToken;
+                    tokenExpiresAt = parsed.session.expiresAt || 0;
+                }
             }
         } catch (_) { /* ignore */ }
     }
@@ -107,7 +140,7 @@
             localStorage.setItem('novashop_data', JSON.stringify({
                 cart,
                 currentUser,
-                authToken,
+                session: authToken ? { idToken: authToken, refreshToken, expiresAt: tokenExpiresAt } : null,
             }));
         } catch (_) { /* ignore */ }
     }
@@ -115,7 +148,11 @@
     // ============================================================
     //  API HELPERS
     // ============================================================
-    async function apiFetch(endpoint, options = {}) {
+    async function apiFetch(endpoint, options = {}, retried = false) {
+        // Proactively refresh an expired ID token.
+        if (authToken && Date.now() > tokenExpiresAt - 30000 && refreshToken && !retried) {
+            await refreshSession();
+        }
         const url = `${API_BASE}${endpoint}`;
         const headers = {
             'Content-Type': 'application/json',
@@ -123,6 +160,9 @@
             ...options.headers,
         };
         const response = await fetch(url, { ...options, headers });
+        if (response.status === 401 && !retried && refreshToken) {
+            if (await refreshSession()) return apiFetch(endpoint, options, true);
+        }
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
             throw new Error(errorData.message || `HTTP ${response.status}`);
@@ -131,16 +171,66 @@
     }
 
     // ============================================================
-    //  AUTHENTICATION
+    //  AMAZON COGNITO AUTH (via the Cognito Identity Provider API)
     // ============================================================
+    function cognitoCall(operation, payload) {
+        return fetch(COGNITO_ENDPOINT, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-amz-json-1.1',
+                'X-Amz-Target': `AWSCognitoIdentityProviderService.${operation}`,
+            },
+            body: JSON.stringify(payload),
+        }).then(async (r) => {
+            const data = await r.json().catch(() => ({}));
+            if (!r.ok) throw new Error(data.message || `Cognito error ${r.status}`);
+            return data;
+        });
+    }
+
+    function decodeJwtPayload(token) {
+        try {
+            const b64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+            return JSON.parse(decodeURIComponent(escape(atob(b64))));
+        } catch (_) { return {}; }
+    }
+
+    function adoptSession(result) {
+        const auth = result.AuthenticationResult || {};
+        authToken = auth.IdToken;
+        if (auth.RefreshToken) refreshToken = auth.RefreshToken;
+        tokenExpiresAt = Date.now() + (auth.ExpiresIn || 3600) * 1000;
+        const claims = decodeJwtPayload(authToken);
+        currentUser = {
+            id: claims.sub || '',
+            username: claims['cognito:username'] || claims.email || 'user',
+        };
+    }
+
+    async function refreshSession() {
+        if (!refreshToken) return false;
+        try {
+            const result = await cognitoCall('InitiateAuth', {
+                AuthFlow: 'REFRESH_TOKEN_AUTH',
+                ClientId: COGNITO_CLIENT_ID,
+                AuthParameters: { REFRESH_TOKEN: refreshToken },
+            });
+            adoptSession(result);
+            saveData();
+            return true;
+        } catch (_) {
+            return false;
+        }
+    }
+
     async function login(username, password) {
         try {
-            const data = await apiFetch('/auth/login', {
-                method: 'POST',
-                body: JSON.stringify({ username, password }),
+            const result = await cognitoCall('InitiateAuth', {
+                AuthFlow: 'USER_PASSWORD_AUTH',
+                ClientId: COGNITO_CLIENT_ID,
+                AuthParameters: { USERNAME: username, PASSWORD: password },
             });
-            authToken = data.token;
-            currentUser = { username: data.username, id: data.userId };
+            adoptSession(result);
             saveData();
             showApp();
             loginError.textContent = '';
@@ -152,9 +242,14 @@
         }
     }
 
-    function logout() {
+    async function logout() {
+        if (refreshToken) {
+            await cognitoCall('RevokeToken', { ClientId: COGNITO_CLIENT_ID, Token: refreshToken }).catch(() => {});
+        }
         currentUser = null;
         authToken = null;
+        refreshToken = null;
+        tokenExpiresAt = 0;
         saveData();
         showLogin();
         toast('Signed out.', 'info');
@@ -231,27 +326,40 @@
             const inCart = cart.find(c => c.id === p.id);
             const qtyInCart = inCart ? inCart.qty : 0;
             const lowStock = p.stock <= 3;
+            const priceNum = Number(p.price);
+            const visual = p.imageUrl
+                ? `<img class="product-img" src="${p.imageUrl}" alt="${p.name}" onerror="this.style.display='none'">`
+                : `<div class="emoji">${p.emoji}</div>`;
+            const safeName = String(p.name).replace(/"/g, '&quot;').replace(/'/g, "\\'");
             return `
                 <div class="product-card">
-                    <div class="emoji">${p.emoji}</div>
+                    ${visual}
                     <div class="name">${p.name}</div>
                     <div class="category">${p.category}</div>
-                    <div class="price">$${p.price.toFixed(2)}</div>
+                    <div class="price">$${priceNum.toFixed(2)}</div>
                     <div class="stock ${lowStock ? 'low' : ''}">${p.stock} in stock</div>
                     <div class="actions">
                         ${qtyInCart > 0 ? `
-                            <button class="btn btn-outline btn-sm" onclick="updateCartQty(${p.id}, -1)" ${p.stock <= 0 ? 'disabled' : ''}>
+                            <button class="btn btn-outline btn-sm" onclick="updateCartQty('${p.id}', -1)" ${p.stock <= 0 ? 'disabled' : ''}>
                                 <i class="fas fa-minus"></i>
                             </button>
                             <span style="font-weight:600;padding:0 4px;min-width:24px;text-align:center;">${qtyInCart}</span>
-                            <button class="btn btn-outline btn-sm" onclick="updateCartQty(${p.id}, 1)" ${p.stock <= qtyInCart ? 'disabled' : ''}>
+                            <button class="btn btn-outline btn-sm" onclick="updateCartQty('${p.id}', 1)" ${p.stock <= qtyInCart ? 'disabled' : ''}>
                                 <i class="fas fa-plus"></i>
                             </button>
                         ` : `
-                            <button class="btn btn-primary btn-sm" onclick="addToCart(${p.id})" ${p.stock <= 0 ? 'disabled' : ''}>
+                            <button class="btn btn-primary btn-sm" onclick="addToCart('${p.id}')" ${p.stock <= 0 ? 'disabled' : ''}>
                                 <i class="fas fa-cart-plus"></i> Add
                             </button>
                         `}
+                    </div>
+                    <div class="actions manage-actions">
+                        <button class="btn btn-outline btn-sm" onclick="editProduct('${p.id}')">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="btn btn-danger btn-sm" onclick="requestDeleteProduct('${p.id}', '${safeName}')">
+                            <i class="fas fa-trash-alt"></i> Delete
+                        </button>
                     </div>
                 </div>
             `;
@@ -303,6 +411,144 @@
     };
 
     // ============================================================
+    //  PRODUCTS — CRUDL OPERATIONS (API Gateway → Lambda → DynamoDB/S3)
+    // ============================================================
+    async function loadProducts() {
+        try {
+            products = await apiFetch('/products');
+            renderProducts();
+        } catch (err) {
+            toast('Failed to load products: ' + err.message, 'error');
+        }
+    }
+
+    async function createProduct(payload) {
+        return apiFetch('/products', { method: 'POST', body: JSON.stringify(payload) });
+    }
+
+    async function updateProduct(id, payload) {
+        return apiFetch(`/products/${encodeURIComponent(id)}`, { method: 'PUT', body: JSON.stringify(payload) });
+    }
+
+    async function deleteProduct(id) {
+        return apiFetch(`/products/${encodeURIComponent(id)}`, { method: 'DELETE' });
+    }
+
+    /** Get a pre-signed S3 PUT URL, then upload the file directly to S3. */
+    async function uploadProductImage(file) {
+        const pres = await apiFetch('/images/presign', {
+            method: 'POST',
+            body: JSON.stringify({ fileName: file.name, contentType: file.type }),
+        });
+        const upload = await fetch(pres.uploadUrl, {
+            method: 'PUT',
+            headers: { 'Content-Type': file.type },
+            body: file,
+        });
+        if (!upload.ok) throw new Error(`S3 upload failed (HTTP ${upload.status})`);
+        return pres.key;
+    }
+
+    // ---------- Product modal ----------
+    function openProductModal(product = null) {
+        productError.textContent = '';
+        productImageInput.value = '';
+        productIdInput.value = product ? product.id : '';
+        productModalTitle.innerHTML = product
+            ? '<i class="fas fa-edit" style="color:var(--primary);margin-right:10px;"></i>Edit Product'
+            : '<i class="fas fa-plus-circle" style="color:var(--primary);margin-right:10px;"></i>Add Product';
+        productNameInput.value = product ? product.name : '';
+        productCategoryInput.value = product ? product.category : 'Electronics';
+        productEmojiInput.value = product && product.emoji ? product.emoji : '';
+        productPriceInput.value = product ? product.price : '';
+        productStockInput.value = product ? product.stock : '';
+        productModal.classList.add('open');
+    }
+
+    function closeProductModal() {
+        productModal.classList.remove('open');
+    }
+
+    addProductBtn.addEventListener('click', () => openProductModal());
+    productModalCancel.addEventListener('click', closeProductModal);
+    productModal.addEventListener('click', (e) => { if (e.target === productModal) closeProductModal(); });
+
+    productForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        productError.textContent = '';
+        const id = productIdInput.value;
+        const payload = {
+            name: productNameInput.value.trim(),
+            category: productCategoryInput.value,
+            emoji: productEmojiInput.value.trim() || '📦',
+            price: parseFloat(productPriceInput.value),
+            stock: parseInt(productStockInput.value, 10),
+        };
+        if (!payload.name || !Number.isFinite(payload.price) || !Number.isInteger(payload.stock)) {
+            productError.textContent = 'Please provide a valid name, price and stock.';
+            return;
+        }
+        try {
+            productModalSave.disabled = true;
+            const file = productImageInput.files[0];
+            if (file) payload.imageKey = await uploadProductImage(file);
+            if (id) {
+                await updateProduct(id, payload);
+                toast('Product updated ✔', 'success');
+            } else {
+                await createProduct(payload);
+                toast('Product created ✔', 'success');
+            }
+            closeProductModal();
+            await loadProducts();
+            renderProducts(searchInput.value);
+        } catch (err) {
+            productError.textContent = err.message || 'Save failed';
+        } finally {
+            productModalSave.disabled = false;
+        }
+    });
+
+    // ---------- Delete flow ----------
+    let pendingDeleteId = null;
+
+    window.requestDeleteProduct = function(id, name) {
+        pendingDeleteId = id;
+        confirmModalText.innerHTML = `Delete <b>"${name}"</b>? This removes it from DynamoDB and its image from S3.`;
+        confirmModal.classList.add('open');
+    };
+
+    function closeConfirmModal() {
+        confirmModal.classList.remove('open');
+        pendingDeleteId = null;
+    }
+
+    confirmCancel.addEventListener('click', closeConfirmModal);
+    confirmModal.addEventListener('click', (e) => { if (e.target === confirmModal) closeConfirmModal(); });
+
+    confirmOk.addEventListener('click', async () => {
+        if (!pendingDeleteId) return closeConfirmModal();
+        try {
+            confirmOk.disabled = true;
+            await deleteProduct(pendingDeleteId);
+            toast('Product deleted', 'success');
+            closeConfirmModal();
+            await loadProducts();
+            renderProducts(searchInput.value);
+        } catch (err) {
+            toast('Delete failed: ' + err.message, 'error');
+            closeConfirmModal();
+        } finally {
+            confirmOk.disabled = false;
+        }
+    });
+
+    window.editProduct = function(id) {
+        const product = products.find(p => p.id === id);
+        if (product) openProductModal(product);
+    };
+
+    // ============================================================
     //  CART
     // ============================================================
     function renderCart() {
@@ -336,17 +582,17 @@
                     <div class="emoji">${item.emoji}</div>
                     <div class="info">
                         <div class="name">${item.name}</div>
-                        <div class="price">$${item.price.toFixed(2)}</div>
+                        <div class="price">$${Number(item.price).toFixed(2)}</div>
                     </div>
                     <div class="qty-control">
-                        <button onclick="updateCartQty(${item.id}, -1)"><i class="fas fa-minus"></i></button>
+                        <button onclick="updateCartQty('${item.id}', -1)"><i class="fas fa-minus"></i></button>
                         <span>${item.qty}</span>
-                        <button onclick="updateCartQty(${item.id}, 1)" ${item.qty >= (products.find(p=>p.id===item.id)?.stock || 0) ? 'disabled' : ''}>
+                        <button onclick="updateCartQty('${item.id}', 1)" ${item.qty >= (products.find(p=>p.id===item.id)?.stock || 0) ? 'disabled' : ''}>
                             <i class="fas fa-plus"></i>
                         </button>
                     </div>
                     <div class="item-total">$${total.toFixed(2)}</div>
-                    <button class="remove-btn" onclick="updateCartQty(${item.id}, -${item.qty})"><i class="fas fa-trash-alt"></i></button>
+                    <button class="remove-btn" onclick="updateCartQty('${item.id}', -${item.qty})"><i class="fas fa-trash-alt"></i></button>
                 </div>
             `;
         });
@@ -534,11 +780,20 @@
     // ============================================================
     loadData();
 
-    if (currentUser && authToken) {
-        showApp();
-    } else {
-        showLogin();
+    async function init() {
+        // Silently refresh an expired Cognito session if possible.
+        if (currentUser && authToken && Date.now() > tokenExpiresAt - 30000 && refreshToken) {
+            const ok = await refreshSession();
+            if (!ok) { currentUser = null; authToken = null; refreshToken = null; }
+        }
+        if (currentUser && authToken) {
+            showApp();
+        } else {
+            showLogin();
+        }
     }
+
+    init();
 
     // Expose switchView globally for inline onclick
     window.switchView = switchView;

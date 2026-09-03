@@ -1,0 +1,277 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  NovaShop serverless backend — Amazon Cognito (auth), API Gateway (REST),
+  Lambda (CRUDL), DynamoDB (products & orders), S3 (product images).
+
+Parameters:
+  StageName:
+    Type: String
+    Default: prod
+    AllowedValues: [dev, staging, prod]
+    Description: API Gateway stage name.
+  UserPoolDomainPrefix:
+    Type: String
+    Default: novashop-sales-demo
+    Description: Globally unique Cognito hosted-UI domain prefix (change to something unique).
+
+Globals:
+  Function:
+    Runtime: nodejs24.x
+    MemorySize: 256
+    Timeout: 10
+    Architectures: [x86_64]
+    Environment:
+      Variables:
+        PRODUCTS_TABLE: !Ref ProductsTable
+        ORDERS_TABLE: !Ref OrdersTable
+        IMAGES_BUCKET: !Ref ImagesBucket
+
+Resources:
+
+  # ============================================================
+  #  SECURITY — Amazon Cognito User Pool + App Client
+  # ============================================================
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: novashop-users
+      UsernameAttributes: [email]
+      AutoVerifiedAttributes: [email]
+      MfaConfiguration: 'OFF'
+      AdminCreateUserConfig:
+        AllowAdminCreateUserOnly: true   # no self sign-up; admin creates users
+        InviteMessageTemplate:
+          EmailMessage: 'Welcome to NovaShop! Your username is {username} and temporary password is {####}.'
+          EmailSubject: 'Your NovaShop account'
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireUppercase: false
+          RequireLowercase: false
+          RequireNumbers: false
+          RequireSymbols: false
+
+  UserPoolDomain:
+    Type: AWS::Cognito::UserPoolDomain
+    Properties:
+      Domain: !Ref UserPoolDomainPrefix
+      UserPoolId: !Ref UserPool
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: novashop-web
+      UserPoolId: !Ref UserPool
+      GenerateSecret: false
+      PreventUserExistenceErrors: ENABLED
+      SupportedIdentityProviders: [COGNITO]
+      ExplicitAuthFlows:
+        - ALLOW_USER_PASSWORD_AUTH     # direct login from the SPA
+        - ALLOW_REFRESH_TOKEN_AUTH     # silent token refresh
+      AccessTokenValidity: 1
+      IdTokenValidity: 1
+      RefreshTokenValidity: 30
+      TokenValidityUnits:
+        AccessToken: hours
+        IdToken: hours
+        RefreshToken: days
+
+  # ============================================================
+  #  API — Amazon API Gateway (REST) with Cognito authorizer
+  # ============================================================
+  Api:
+    Type: AWS::Serverless::Api
+    Properties:
+      Name: novashop-api
+      StageName: !Ref StageName
+      Cors:
+        AllowMethods: "'DELETE,GET,OPTIONS,PATCH,POST,PUT'"
+        AllowHeaders: "'Content-Type,Authorization,X-Amz-Date,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        AddDefaultAuthorizerToCorsPreflight: false
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: !GetAtt UserPool.Arn
+
+  # ============================================================
+  #  DATA — DynamoDB tables
+  # ============================================================
+  ProductsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${AWS::StackName}-products'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: productId
+          AttributeType: S
+      KeySchema:
+        - AttributeName: productId
+          KeyType: HASH
+      SSESpecification:
+        SSEEnabled: true
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  OrdersTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: !Sub '${AWS::StackName}-orders'
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: orderId
+          AttributeType: S
+        - AttributeName: userId
+          AttributeType: S
+        - AttributeName: createdAt
+          AttributeType: S
+      KeySchema:
+        - AttributeName: orderId
+          KeyType: HASH
+      GlobalSecondaryIndexes:
+        - IndexName: user-createdAt-index
+          KeySchema:
+            - AttributeName: userId
+              KeyType: HASH
+            - AttributeName: createdAt
+              KeyType: RANGE
+          Projection:
+            ProjectionType: ALL
+      SSESpecification:
+        SSEEnabled: true
+      PointInTimeRecoverySpecification:
+        PointInTimeRecoveryEnabled: true
+
+  # ============================================================
+  #  STORAGE — S3 bucket for product images (presigned URLs only)
+  # ============================================================
+  ImagesBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${AWS::StackName}-images-${AWS::AccountId}'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      OwnershipControls:
+        Rules:
+          - ObjectOwnership: BucketOwnerEnforced
+      CorsConfiguration:
+        CorsRules:
+          - AllowedMethods: [PUT, GET]
+            AllowedOrigins: ['*']
+            AllowedHeaders: ['*']
+            MaxAge: 3000
+
+  # ============================================================
+  #  COMPUTE — Lambda functions
+  # ============================================================
+  ProductsFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-products-crudl'
+      CodeUri: ../backend/
+      Handler: src/handlers/products.handler
+      Description: Create/Read/Update/Delete/List products (DynamoDB + S3 images)
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProductsTable
+        - S3CrudPolicy:
+            BucketName: !Ref ImagesBucket
+      Events:
+        ListProducts:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /products
+            Method: get
+        CreateProduct:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /products
+            Method: post
+        GetProduct:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /products/{id}
+            Method: get
+        UpdateProduct:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /products/{id}
+            Method: put
+        DeleteProduct:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /products/{id}
+            Method: delete
+
+  OrdersFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-orders'
+      CodeUri: ../backend/
+      Handler: src/handlers/orders.handler
+      Description: Create & list orders; atomically decrements stock (DynamoDB transactions)
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProductsTable
+        - DynamoDBCrudPolicy:
+            TableName: !Ref OrdersTable
+      Events:
+        ListOrders:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /orders
+            Method: get
+        CreateOrder:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /orders
+            Method: post
+
+  PresignFn:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub '${AWS::StackName}-presign'
+      CodeUri: ../backend/
+      Handler: src/handlers/presign.handler
+      Description: Returns pre-signed S3 PUT URLs for product image uploads
+      Policies:
+        - S3CrudPolicy:
+            BucketName: !Ref ImagesBucket
+      Events:
+        PresignImage:
+          Type: Api
+          Properties:
+            RestApiId: !Ref Api
+            Path: /images/presign
+            Method: post
+
+# ============================================================
+#  OUTPUTS — paste these into frontend/config.js
+# ============================================================
+Outputs:
+  ApiBaseUrl:
+    Description: API Gateway base URL (set as apiBaseUrl in frontend/config.js)
+    Value: !Sub 'https://${Api}.execute-api.${AWS::Region}.amazonaws.com/${StageName}'
+  UserPoolId:
+    Description: Cognito User Pool ID (set as userPoolId in frontend/config.js)
+    Value: !Ref UserPool
+  UserPoolClientId:
+    Description: Cognito App Client ID (set as clientId in frontend/config.js)
+    Value: !Ref UserPoolClient
+  ImagesBucketName:
+    Description: S3 bucket that stores product images
+    Value: !Ref ImagesBucket
+  Region:
+    Value: !Ref AWS::Region
