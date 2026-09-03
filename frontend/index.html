@@ -1143,6 +1143,9 @@
                                 <option value="Books">Books</option>
                                 <option value="Toys">Toys</option>
                             </select>
+                            <button class="btn btn-primary btn-sm" id="addProductBtn">
+                                <i class="fas fa-plus"></i> Add Product
+                            </button>
                         </div>
                     </div>
                     <div class="product-grid" id="productGrid"></div>
@@ -1223,6 +1226,48 @@
         </main>
     </div>
 
+    <!-- ===== PRODUCT CRUD MODAL ===== -->
+    <div class="modal-overlay" id="productModal">
+        <div class="modal">
+            <h2 id="productModalTitle"><i class="fas fa-box" style="color:var(--primary);margin-right:10px;"></i>Product</h2>
+            <form id="productForm">
+                <input type="hidden" id="productIdInput" />
+                <div class="form-group" style="margin-bottom:12px;">
+                    <label for="productNameInput">Product Name</label>
+                    <input type="text" id="productNameInput" required style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--gray-200);" />
+                </div>
+                <div class="form-group" style="margin-bottom:12px;">
+                    <label for="productCategoryInput">Category</label>
+                    <select id="productCategoryInput" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--gray-200);">
+                        <option value="Electronics">Electronics</option>
+                        <option value="Clothing">Clothing</option>
+                        <option value="Home">Home</option>
+                        <option value="Books">Books</option>
+                        <option value="Toys">Toys</option>
+                    </select>
+                </div>
+                <div style="display:flex;gap:12px;margin-bottom:12px;">
+                    <div style="flex:1;">
+                        <label for="productPriceInput">Price ($)</label>
+                        <input type="number" step="0.01" id="productPriceInput" required style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--gray-200);" />
+                    </div>
+                    <div style="flex:1;">
+                        <label for="productStockInput">Stock</label>
+                        <input type="number" id="productStockInput" required style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--gray-200);" />
+                    </div>
+                </div>
+                <div class="form-group" style="margin-bottom:20px;">
+                    <label for="productEmojiInput">Emoji Icon</label>
+                    <input type="text" id="productEmojiInput" placeholder="e.g. 🎧" style="width:100%;padding:10px;border-radius:8px;border:1px solid var(--gray-200);" />
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" id="productModalCancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="productModalSave"><i class="fas fa-save"></i> Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- ===== MODAL ===== -->
     <div class="modal-overlay" id="checkoutModal">
         <div class="modal">
@@ -1246,6 +1291,9 @@
 
     <!-- ===== TOAST CONTAINER ===== -->
     <div class="toast-container" id="toastContainer"></div>
+
+    <!-- External AWS & CRUD logic script -->
+    <script src="ap.js"></script>
 
     <!-- ============================================================ -->
     <!-- ===== JAVASCRIPT ===== -->

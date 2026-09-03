@@ -1,0 +1,230 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: NovaShop Serverless Sales System - AWS Cognito, API Gateway, Lambda, DynamoDB, S3 Architecture
+
+Globals:
+  Function:
+    Timeout: 10
+    Runtime: nodejs20.x
+    MemorySize: 256
+    Environment:
+      Variables:
+        TABLE_NAME: !Ref ProductsTable
+        S3_BUCKET: !Ref NovaShopStorageBucket
+
+Resources:
+  # ============================================================
+  #  AMAZON COGNITO (Security & Auth)
+  # ============================================================
+  UserPool:
+    Type: AWS::Cognito::UserPool
+    Properties:
+      UserPoolName: NovaShopUserPool
+      AutoVerifiedAttributes:
+        - email
+      UsernameAttributes:
+        - email
+        - username
+      Policies:
+        PasswordPolicy:
+          MinimumLength: 8
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: false
+          RequireUppercase: true
+
+  UserPoolClient:
+    Type: AWS::Cognito::UserPoolClient
+    Properties:
+      ClientName: NovaShopWebClient
+      UserPoolId: !Ref UserPool
+      GenerateSecret: false
+      ExplicitAuthFlows:
+        - ALLOW_USER_SRP_AUTH
+        - ALLOW_REFRESH_TOKEN_AUTH
+        - ALLOW_USER_PASSWORD_AUTH
+
+  # ============================================================
+  #  DYNAMODB (Database)
+  # ============================================================
+  ProductsTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: NovaShopProducts
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+      BillingMode: PAY_PER_REQUEST
+
+  # ============================================================
+  #  S3 BUCKET (Static Hosting & File Storage)
+  # ============================================================
+  NovaShopStorageBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub novashop-storage-${AWS::AccountId}-${AWS::Region}
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+
+  # ============================================================
+  #  API GATEWAY (REST API with Cognito Authorizer)
+  # ============================================================
+  NovaShopApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: prod
+      Cors:
+        AllowMethods: "'GET,POST,PUT,DELETE,OPTIONS'"
+        AllowHeaders: "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token'"
+        AllowOrigin: "'*'"
+      Auth:
+        DefaultAuthorizer: CognitoAuthorizer
+        Authorizers:
+          CognitoAuthorizer:
+            UserPoolArn: !GetAtt UserPool.Arn
+
+  # ============================================================
+  #  AWS LAMBDA FUNCTIONS (CRUDL Operations)
+  # ============================================================
+  ProductsCrudlFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: NovaShopProductsCrudl
+      Handler: index.handler
+      InlineCode: |
+        import { DynamoDBClient } from "@aws-sdk/client-dynamodb";
+        import { DynamoDBDocumentClient, ScanCommand, GetCommand, PutCommand, DeleteCommand } from "@aws-sdk/lib-dynamodb";
+
+        const client = new DynamoDBClient({});
+        const docClient = DynamoDBDocumentClient.from(client);
+        const TABLE_NAME = process.env.TABLE_NAME;
+
+        const headers = {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Headers": "Content-Type,Authorization",
+          "Access-Control-Allow-Methods": "GET,POST,PUT,DELETE,OPTIONS"
+        };
+
+        export const handler = async (event) => {
+          if (event.httpMethod === "OPTIONS") {
+            return { statusCode: 200, headers, body: JSON.stringify({ message: "OK" }) };
+          }
+
+          const httpMethod = event.httpMethod;
+          const pathParameters = event.pathParameters || {};
+          const productId = pathParameters.id;
+
+          try {
+            // LIST (Get all products)
+            if (httpMethod === "GET" && !productId) {
+              const data = await docClient.send(new ScanCommand({ TableName: TABLE_NAME }));
+              return { statusCode: 200, headers, body: JSON.stringify(data.Items || []) };
+            }
+
+            // READ (Get single product by ID)
+            if (httpMethod === "GET" && productId) {
+              const data = await docClient.send(new GetCommand({ TableName: TABLE_NAME, Key: { id: productId } }));
+              if (!data.Item) {
+                return { statusCode: 404, headers, body: JSON.stringify({ message: "Product not found" }) };
+              }
+              return { statusCode: 200, headers, body: JSON.stringify(data.Item) };
+            }
+
+            // CREATE (Add new product)
+            if (httpMethod === "POST") {
+              const body = JSON.parse(event.body || "{}");
+              const newItem = {
+                id: body.id || Date.now().toString(),
+                name: body.name,
+                category: body.category || "General",
+                price: Number(body.price) || 0,
+                stock: Number(body.stock) || 0,
+                emoji: body.emoji || "📦",
+                createdAt: new Date().toISOString()
+              };
+              await docClient.send(new PutCommand({ TableName: TABLE_NAME, Item: newItem }));
+              return { statusCode: 201, headers, body: JSON.stringify(newItem) };
+            }
+
+            // UPDATE (Edit product)
+            if (httpMethod === "PUT" && productId) {
+              const body = JSON.parse(event.body || "{}");
+              const updatedItem = {
+                id: productId,
+                name: body.name,
+                category: body.category,
+                price: Number(body.price),
+                stock: Number(body.stock),
+                emoji: body.emoji || "📦",
+                updatedAt: new Date().toISOString()
+              };
+              await docClient.send(new PutCommand({ TableName: TABLE_NAME, Item: updatedItem }));
+              return { statusCode: 200, headers, body: JSON.stringify(updatedItem) };
+            }
+
+            // DELETE (Remove product)
+            if (httpMethod === "DELETE" && productId) {
+              await docClient.send(new DeleteCommand({ TableName: TABLE_NAME, Key: { id: productId } }));
+              return { statusCode: 200, headers, body: JSON.stringify({ message: "Product deleted", id: productId }) };
+            }
+
+            return { statusCode: 400, headers, body: JSON.stringify({ message: "Unsupported method/route" }) };
+          } catch (err) {
+            return { statusCode: 500, headers, body: JSON.stringify({ error: err.message }) };
+          }
+        };
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref ProductsTable
+      Events:
+        ListProducts:
+          Type: Api
+          Properties:
+            RestApiId: !Ref NovaShopApi
+            Path: /products
+            Method: GET
+        CreateProduct:
+          Type: Api
+          Properties:
+            RestApiId: !Ref NovaShopApi
+            Path: /products
+            Method: POST
+        ReadProduct:
+          Type: Api
+          Properties:
+            RestApiId: !Ref NovaShopApi
+            Path: /products/{id}
+            Method: GET
+        UpdateProduct:
+          Type: Api
+          Properties:
+            RestApiId: !Ref NovaShopApi
+            Path: /products/{id}
+            Method: PUT
+        DeleteProduct:
+          Type: Api
+          Properties:
+            RestApiId: !Ref NovaShopApi
+            Path: /products/{id}
+            Method: DELETE
+
+Outputs:
+  ApiEndpoint:
+    Description: API Gateway endpoint URL for Prod stage
+    Value: !Sub "https://${NovaShopApi}.execute-api.${AWS::Region}.amazonaws.com/prod/"
+  UserPoolId:
+    Description: Cognito User Pool ID
+    Value: !Ref UserPool
+  UserPoolClientId:
+    Description: Cognito User Pool Client ID
+    Value: !Ref UserPoolClient
+  S3BucketName:
+    Description: S3 Storage Bucket
+    Value: !Ref NovaShopStorageBucket
