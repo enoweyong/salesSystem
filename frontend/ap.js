@@ -448,7 +448,6 @@
                 if (parsed.orders) orders = parsed.orders;
                 if (parsed.orderIdCounter) orderIdCounter = parsed.orderIdCounter;
                 if (parsed.products) {
-                    // Load full product array or merge custom added ones
                     products = parsed.products;
                 }
                 if (parsed.currentUser) currentUser = parsed.currentUser;
@@ -725,7 +724,7 @@
         prodEmojiInput.value = '📦';
         prodPriceInput.value = '';
         prodStockInput.value = '';
-        productModalTitle.innerHTML = '<i class="fas fa-box" style="color:var(--primary);margin-right:10px;"></i>Add New Product';
+        productModalTitle.innerHTML = '<i class="fas fa-box" style="color:var(--primary);margin-right:10px;"></i> Add New Product';
         productModal.classList.add('open');
     }
 
@@ -738,7 +737,7 @@
         prodEmojiInput.value = product.emoji || '📦';
         prodPriceInput.value = product.price;
         prodStockInput.value = product.stock;
-        productModalTitle.innerHTML = '<i class="fas fa-edit" style="color:var(--primary);margin-right:10px;"></i>Edit Product';
+        productModalTitle.innerHTML = '<i class="fas fa-edit" style="color:var(--primary);margin-right:10px;"></i> Edit Product';
         productModal.classList.add('open');
     };
 
@@ -835,9 +834,9 @@
 
         if (!filtered.length) {
             productGrid.innerHTML = `
-                <div style="grid-column:1/-1;text-align:center;padding:48px 0;color:var(--gray-400);">
-                    <i class="fas fa-search" style="font-size:2rem;display:block;margin-bottom:12px;"></i>
-                    No products found.
+                <div style="grid-column:1/-1;text-align:center;padding:56px 0;color:var(--text-muted);">
+                    <i class="fas fa-search" style="font-size:2.4rem;display:block;margin-bottom:14px;color:var(--text-dim);"></i>
+                    No products found matching your search.
                 </div>`;
             return;
         }
@@ -858,7 +857,7 @@
                     </div>
                     <div class="emoji">${p.emoji}</div>
                     <div class="name">${p.name}</div>
-                    <div class="category">${p.category}</div>
+                    <span class="category-pill">${p.category}</span>
                     <div class="price">$${p.price.toFixed(2)}</div>
                     <div class="stock ${lowStock ? 'low' : ''}">${p.stock} in stock</div>
                     <div class="actions">
@@ -866,13 +865,13 @@
                             <button class="btn btn-outline btn-sm" onclick="updateCartQty(${p.id}, -1)">
                                 <i class="fas fa-minus"></i>
                             </button>
-                            <span style="font-weight:600;padding:0 4px;min-width:24px;text-align:center;">${qtyInCart}</span>
+                            <span style="font-weight:700;padding:0 6px;min-width:24px;text-align:center;color:#ffffff;">${qtyInCart}</span>
                             <button class="btn btn-outline btn-sm" onclick="updateCartQty(${p.id}, 1)" ${p.stock <= qtyInCart ? 'disabled' : ''}>
                                 <i class="fas fa-plus"></i>
                             </button>
                         ` : `
-                            <button class="btn btn-primary btn-sm" onclick="addToCart(${p.id})" ${p.stock <= 0 ? 'disabled' : ''}>
-                                <i class="fas fa-cart-plus"></i> Add
+                            <button class="btn btn-primary btn-sm btn-block" onclick="addToCart(${p.id})" ${p.stock <= 0 ? 'disabled' : ''}>
+                                <i class="fas fa-cart-plus"></i> Add to Cart
                             </button>
                         `}
                     </div>
@@ -1040,8 +1039,8 @@
     function renderOrders() {
         if (!orders.length) {
             ordersList.innerHTML = `
-                <div class="empty">
-                    <i class="fas fa-receipt" style="font-size:2.4rem;display:block;margin-bottom:12px;color:var(--gray-300);"></i>
+                <div class="empty" style="text-align:center;padding:56px 0;color:var(--text-muted);">
+                    <i class="fas fa-receipt" style="font-size:2.8rem;display:block;margin-bottom:14px;color:var(--text-dim);"></i>
                     <p>No orders placed yet.</p>
                 </div>
             `;
@@ -1052,17 +1051,15 @@
             const itemCount = o.items.reduce((s, i) => s + i.qty, 0);
             const date = new Date(o.date);
             const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            const statusClass = o.status === 'completed' ? 'status-completed' :
-                               o.status === 'pending' ? 'status-pending' : 'status-cancelled';
             return `
                 <div class="order-item">
                     <div class="left">
-                        <div class="id">Order #${o.id}</div>
-                        <div class="meta">${dateStr} · ${itemCount} items</div>
+                        <div class="id" style="font-weight:700;color:#ffffff;">Order #${o.id}</div>
+                        <div class="meta" style="font-size:0.83rem;color:var(--text-muted);">${dateStr} · ${itemCount} items</div>
                     </div>
-                    <div class="right">
-                        <span class="status ${statusClass}">${o.status}</span>
-                        <span class="total">$${o.total.toFixed(2)}</span>
+                    <div class="right" style="display:flex;align-items:center;gap:16px;">
+                        <span class="status status-completed">${o.status}</span>
+                        <span class="total" style="font-weight:800;font-size:1.1rem;color:#ffffff;">$${o.total.toFixed(2)}</span>
                     </div>
                 </div>
             `;
@@ -1086,7 +1083,7 @@
 
         const recent = [...orders].reverse().slice(0, 5);
         if (!recent.length) {
-            recentOrders.innerHTML = `<li style="padding:24px 0;text-align:center;color:var(--gray-400);">No orders yet.</li>`;
+            recentOrders.innerHTML = `<li style="padding:28px 0;text-align:center;color:var(--text-muted);">No orders placed yet.</li>`;
             return;
         }
         recentOrders.innerHTML = recent.map(o => {
@@ -1094,8 +1091,8 @@
             const dateStr = date.toLocaleDateString();
             return `
                 <li>
-                    <span><span class="order-id">#${o.id}</span> <span class="order-date">${dateStr}</span></span>
-                    <span class="order-total">$${o.total.toFixed(2)}</span>
+                    <span><strong style="color:#ffffff;">#${o.id}</strong> <span style="font-size:0.83rem;color:var(--text-muted);margin-left:8px;">${dateStr}</span></span>
+                    <span style="font-weight:700;color:#ffffff;">$${o.total.toFixed(2)}</span>
                 </li>
             `;
         }).join('');
@@ -1107,5 +1104,5 @@
 
     window.addEventListener('beforeunload', saveData);
 
-    console.log('🛒 NovaShop loaded with Product Management.');
+    console.log('🛒 NovaShop loaded with Product Management & Modern Dashboard UI.');
 })();

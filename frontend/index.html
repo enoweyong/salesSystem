@@ -3,15 +3,17 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NovaShop — Sales System</title>
+    <title>NovaShop — Modern Sales & POS Dashboard</title>
 
     <!-- Font Awesome 6 (free) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
-    <!-- Google Font: Inter -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700&display=swap" rel="stylesheet" />
+    <!-- Google Font: Plus Jakarta Sans & Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
-        /* ---------- RESET & BASE ---------- */
+        /* ---------- RESET & DESIGN TOKENS ---------- */
         *,
         *::before,
         *::after {
@@ -21,27 +23,38 @@
         }
 
         :root {
-            --primary: #4f46e5;
-            --primary-light: #818cf8;
-            --primary-dark: #4338ca;
-            --primary-bg: #eef2ff;
-            --success: #22c55e;
+            /* Color Palette - Modern Dark Slate & Indigo Cyberpunk Accent */
+            --bg-dark: #090d16;
+            --bg-surface: #111827;
+            --bg-card: #1f293d;
+            --bg-card-hover: #26334d;
+            --border-color: #2b3952;
+            --border-highlight: #3b82f640;
+
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.25);
+            --primary-hover: #4f46e5;
+            --accent-cyan: #06b6d4;
+            --accent-purple: #a855f7;
+
+            --success: #10b981;
+            --success-glow: rgba(16, 185, 129, 0.2);
             --danger: #ef4444;
+            --danger-glow: rgba(239, 68, 68, 0.2);
             --warning: #f59e0b;
-            --gray-50: #f9fafb;
-            --gray-100: #f3f4f6;
-            --gray-200: #e5e7eb;
-            --gray-300: #d1d5db;
-            --gray-400: #9ca3af;
-            --gray-500: #6b7280;
-            --gray-600: #4b5563;
-            --gray-700: #374151;
-            --gray-800: #1f2937;
-            --gray-900: #111827;
-            --radius: 12px;
-            --shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
-            --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.10);
-            --transition: 0.25s ease;
+            --warning-glow: rgba(245, 158, 11, 0.2);
+
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --text-dim: #6b7280;
+
+            --radius-sm: 8px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+
+            --shadow-card: 0 10px 30px -10px rgba(0, 0, 0, 0.5);
+            --shadow-glow: 0 0 25px rgba(99, 102, 241, 0.18);
+            --transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         html {
@@ -50,20 +63,26 @@
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--gray-50);
-            color: var(--gray-800);
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background-color: var(--bg-dark);
+            color: var(--text-main);
             min-height: 100vh;
             display: flex;
             flex-direction: column;
+            background-image:
+                radial-gradient(circle at 15% 15%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 85% 85%, rgba(6, 182, 212, 0.06) 0%, transparent 40%);
+            background-attachment: fixed;
         }
 
         a {
             text-decoration: none;
             color: var(--primary);
+            transition: var(--transition);
             cursor: pointer;
         }
         a:hover {
+            color: #818cf8;
             text-decoration: underline;
         }
 
@@ -73,32 +92,32 @@
             background: none;
             font-family: inherit;
         }
-        input,
-        select {
+        input, select {
             font-family: inherit;
+            color: var(--text-main);
         }
 
         /* ---------- SCROLLBAR ---------- */
         ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
+            width: 8px;
+            height: 8px;
         }
         ::-webkit-scrollbar-track {
-            background: var(--gray-100);
+            background: var(--bg-dark);
         }
         ::-webkit-scrollbar-thumb {
-            background: var(--gray-300);
+            background: var(--border-color);
             border-radius: 10px;
         }
         ::-webkit-scrollbar-thumb:hover {
-            background: var(--gray-400);
+            background: var(--primary);
         }
 
-        /* ---------- UTILITY ---------- */
+        /* ---------- UTILITIES & BUTTONS ---------- */
         .container {
-            max-width: 1360px;
+            max-width: 1380px;
             margin: 0 auto;
-            padding: 0 24px;
+            padding: 0 28px;
         }
 
         .badge {
@@ -107,192 +126,215 @@
             justify-content: center;
             background: var(--danger);
             color: #fff;
-            font-size: 0.65rem;
-            font-weight: 600;
-            border-radius: 50%;
-            width: 20px;
-            height: 20px;
-            line-height: 1;
+            font-size: 0.7rem;
+            font-weight: 700;
+            border-radius: 9999px;
+            padding: 2px 7px;
+            box-shadow: 0 0 10px var(--danger-glow);
         }
 
         .btn {
             display: inline-flex;
             align-items: center;
-            gap: 8px;
-            padding: 10px 20px;
-            border-radius: var(--radius);
+            gap: 9px;
+            padding: 11px 22px;
+            border-radius: var(--radius-sm);
             font-weight: 600;
-            font-size: 0.875rem;
+            font-size: 0.88rem;
             transition: var(--transition);
             border: 1px solid transparent;
+            cursor: pointer;
+            white-space: nowrap;
         }
         .btn-primary {
-            background: var(--primary);
-            color: #fff;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-hover) 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 18px var(--primary-glow);
         }
         .btn-primary:hover {
-            background: var(--primary-dark);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 16px rgba(79, 70, 229, 0.30);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(99, 102, 241, 0.4);
+            filter: brightness(1.1);
         }
         .btn-success {
-            background: var(--success);
-            color: #fff;
+            background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 18px var(--success-glow);
         }
         .btn-success:hover {
-            background: #16a34a;
-            transform: translateY(-1px);
-            box-shadow: 0 4px 16px rgba(34, 197, 94, 0.30);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(16, 185, 129, 0.4);
         }
         .btn-danger {
-            background: var(--danger);
-            color: #fff;
+            background: linear-gradient(135deg, var(--danger) 0%, #dc2626 100%);
+            color: #ffffff;
+            box-shadow: 0 4px 18px var(--danger-glow);
         }
         .btn-danger:hover {
-            background: #dc2626;
-            transform: translateY(-1px);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(239, 68, 68, 0.4);
         }
         .btn-outline {
-            background: transparent;
-            border-color: var(--gray-300);
-            color: var(--gray-600);
+            background: rgba(255, 255, 255, 0.03);
+            border-color: var(--border-color);
+            color: var(--text-muted);
         }
         .btn-outline:hover {
-            background: var(--gray-100);
-            border-color: var(--gray-400);
-        }
-        .btn-ghost {
-            color: var(--gray-500);
-        }
-        .btn-ghost:hover {
-            color: var(--gray-700);
-            background: var(--gray-100);
+            background: rgba(255, 255, 255, 0.08);
+            color: var(--text-main);
+            border-color: var(--primary);
         }
         .btn-sm {
-            padding: 6px 14px;
-            font-size: 0.8rem;
+            padding: 7px 15px;
+            font-size: 0.82rem;
+            border-radius: 6px;
         }
         .btn-block {
             width: 100%;
             justify-content: center;
         }
         .btn:disabled {
-            opacity: 0.5;
-            pointer-events: none;
+            opacity: 0.45;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
         }
 
-        /* ---------- LOGIN / AUTH PAGE ---------- */
+        /* ---------- LOGIN & AUTH PAGE ---------- */
         .login-page {
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            background: linear-gradient(135deg, var(--primary-bg) 0%, #dbeafe 100%);
+            background: radial-gradient(circle at center, #1e1b4b 0%, #090d16 80%);
             padding: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+        .login-page::before {
+            content: '';
+            position: absolute;
+            width: 400px;
+            height: 400px;
+            background: var(--primary);
+            filter: blur(140px);
+            opacity: 0.2;
+            top: 20%;
+            left: 20%;
+            border-radius: 50%;
         }
         .login-card {
-            background: #fff;
-            border-radius: var(--radius);
-            padding: 40px 36px;
-            max-width: 440px;
+            background: var(--bg-surface);
+            border-radius: var(--radius-lg);
+            padding: 44px 38px;
+            max-width: 450px;
             width: 100%;
-            box-shadow: var(--shadow-lg);
-            border: 1px solid var(--gray-200);
+            box-shadow: var(--shadow-card), 0 0 40px rgba(99, 102, 241, 0.12);
+            border: 1px solid var(--border-color);
+            position: relative;
+            z-index: 10;
+            backdrop-filter: blur(12px);
         }
         .login-card .logo {
             display: flex;
             align-items: center;
-            gap: 10px;
-            font-weight: 700;
-            font-size: 1.6rem;
-            color: var(--gray-900);
+            gap: 12px;
+            font-weight: 800;
+            font-size: 1.8rem;
+            color: #ffffff;
             margin-bottom: 8px;
             justify-content: center;
+            letter-spacing: -0.02em;
         }
         .login-card .logo i {
-            color: var(--primary);
-            font-size: 1.8rem;
+            background: linear-gradient(135deg, var(--primary), var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 2.1rem;
         }
         .login-card .logo span {
             color: var(--primary);
         }
         .login-card .subtitle {
             text-align: center;
-            color: var(--gray-500);
-            margin-bottom: 24px;
-            font-size: 0.875rem;
+            color: var(--text-muted);
+            margin-bottom: 28px;
+            font-size: 0.9rem;
         }
-        .login-card .form-group {
-            margin-bottom: 16px;
+        .form-group {
+            margin-bottom: 18px;
         }
-        .login-card .form-group label {
+        .form-group label {
             display: block;
-            font-weight: 500;
-            font-size: 0.85rem;
-            color: var(--gray-700);
-            margin-bottom: 4px;
+            font-weight: 600;
+            font-size: 0.83rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            letter-spacing: 0.02em;
         }
-        .login-card .form-group input {
+        .form-group input, .form-group select {
             width: 100%;
-            padding: 12px 14px;
-            border: 1px solid var(--gray-200);
-            border-radius: 8px;
-            font-size: 0.95rem;
+            padding: 12px 16px;
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            font-size: 0.92rem;
             transition: var(--transition);
             outline: none;
-            background: var(--gray-50);
+            color: var(--text-main);
         }
-        .login-card .form-group input:focus {
+        .form-group input:focus, .form-group select:focus {
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
-            background: #fff;
+            box-shadow: 0 0 0 3px var(--primary-glow);
+            background: #232e44;
         }
         .login-card .btn {
             width: 100%;
             justify-content: center;
-            padding: 12px;
+            padding: 13px;
             font-size: 0.95rem;
-            margin-top: 8px;
+            margin-top: 10px;
         }
         .login-card .error-msg {
             color: var(--danger);
             font-size: 0.85rem;
             text-align: center;
-            margin-top: 10px;
+            margin-top: 12px;
             min-height: 1.4rem;
+            font-weight: 500;
         }
         .login-card .auth-footer {
-            margin-top: 18px;
-            padding-top: 16px;
-            border-top: 1px solid var(--gray-100);
+            margin-top: 22px;
+            padding-top: 18px;
+            border-top: 1px solid var(--border-color);
             text-align: center;
-            font-size: 0.85rem;
-            color: var(--gray-600);
+            font-size: 0.86rem;
+            color: var(--text-muted);
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 10px;
         }
-        .login-card .code-info {
-            background: var(--primary-bg);
-            border: 1px dashed var(--primary-light);
-            border-radius: 8px;
-            padding: 10px 12px;
-            font-size: 0.8rem;
-            color: var(--gray-700);
-            margin-bottom: 14px;
+        .code-info {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px dashed var(--primary);
+            border-radius: var(--radius-sm);
+            padding: 12px 14px;
+            font-size: 0.83rem;
+            color: var(--text-main);
+            margin-bottom: 16px;
             text-align: center;
-            line-height: 1.4;
+            line-height: 1.5;
         }
-        .login-card .code-info code {
-            background: #fff;
-            padding: 2px 6px;
+        .code-info code {
+            background: var(--bg-card);
+            padding: 3px 8px;
             border-radius: 4px;
             font-weight: 700;
-            color: var(--primary-dark);
-            border: 1px solid var(--gray-200);
+            color: var(--accent-cyan);
+            border: 1px solid var(--border-color);
         }
 
-        /* ---------- APP (main) ---------- */
+        /* ---------- APP STRUCTURE ---------- */
         #app {
             display: none;
             flex-direction: column;
@@ -302,36 +344,34 @@
             display: flex;
         }
 
-        /* ---------- HEADER ---------- */
+        /* ---------- HEADER & NAVBAR ---------- */
         .header {
-            background: #fff;
-            border-bottom: 1px solid var(--gray-200);
-            padding: 0 0;
+            background: rgba(17, 24, 39, 0.85);
+            border-bottom: 1px solid var(--border-color);
             position: sticky;
             top: 0;
             z-index: 100;
-            backdrop-filter: blur(8px);
-            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(16px);
         }
         .header-inner {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            height: 72px;
-            gap: 12px;
-            flex-wrap: wrap;
+            height: 74px;
+            gap: 16px;
         }
         .logo {
             display: flex;
             align-items: center;
             gap: 10px;
-            font-weight: 700;
-            font-size: 1.3rem;
-            color: var(--gray-900);
+            font-weight: 800;
+            font-size: 1.4rem;
+            color: #ffffff;
+            letter-spacing: -0.02em;
         }
         .logo i {
             color: var(--primary);
-            font-size: 1.6rem;
+            font-size: 1.7rem;
         }
         .logo span {
             color: var(--primary);
@@ -339,32 +379,32 @@
 
         .nav-tabs {
             display: flex;
-            gap: 4px;
-            background: var(--gray-100);
-            padding: 4px;
-            border-radius: var(--radius);
-            flex-wrap: wrap;
+            gap: 6px;
+            background: rgba(0, 0, 0, 0.25);
+            padding: 5px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
         }
         .nav-tab {
-            padding: 8px 18px;
-            border-radius: 8px;
-            font-weight: 500;
-            font-size: 0.85rem;
-            color: var(--gray-500);
+            padding: 9px 20px;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            font-size: 0.86rem;
+            color: var(--text-muted);
             transition: var(--transition);
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             white-space: nowrap;
         }
         .nav-tab:hover {
-            color: var(--gray-700);
-            background: rgba(255, 255, 255, 0.5);
+            color: var(--text-main);
+            background: rgba(255, 255, 255, 0.05);
         }
         .nav-tab.active {
-            background: #fff;
-            color: var(--gray-900);
-            box-shadow: var(--shadow);
+            background: var(--primary);
+            color: #ffffff;
+            box-shadow: 0 4px 14px var(--primary-glow);
         }
 
         .header-actions {
@@ -375,30 +415,36 @@
         .user-info {
             display: flex;
             align-items: center;
-            gap: 8px;
-            font-weight: 500;
-            font-size: 0.9rem;
-            color: var(--gray-600);
+            gap: 9px;
+            font-weight: 600;
+            font-size: 0.88rem;
+            color: var(--text-main);
+            background: var(--bg-card);
+            padding: 7px 14px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
         }
         .user-info i {
-            font-size: 1.2rem;
-            color: var(--primary-light);
+            font-size: 1.1rem;
+            color: var(--accent-cyan);
         }
         .cart-trigger {
             position: relative;
-            padding: 8px 12px;
-            border-radius: var(--radius);
+            padding: 9px 15px;
+            border-radius: var(--radius-sm);
             transition: var(--transition);
             display: flex;
             align-items: center;
-            gap: 6px;
-            font-weight: 500;
-            font-size: 0.9rem;
-            color: var(--gray-600);
-            background: var(--gray-100);
+            gap: 8px;
+            font-weight: 600;
+            font-size: 0.88rem;
+            color: var(--text-main);
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
         }
         .cart-trigger:hover {
-            background: var(--gray-200);
+            border-color: var(--primary);
+            background: var(--bg-card-hover);
         }
         .cart-trigger .badge {
             position: absolute;
@@ -407,90 +453,125 @@
         }
 
         .signout-btn {
-            padding: 6px 16px;
-            border-radius: 8px;
-            background: var(--gray-100);
-            color: var(--gray-600);
-            font-weight: 500;
-            font-size: 0.8rem;
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
+            background: rgba(239, 68, 68, 0.1);
+            color: var(--danger);
+            border: 1px solid rgba(239, 68, 68, 0.25);
+            font-weight: 600;
+            font-size: 0.82rem;
             transition: var(--transition);
         }
         .signout-btn:hover {
             background: var(--danger);
-            color: #fff;
+            color: #ffffff;
         }
 
-        /* ---------- MAIN ---------- */
+        /* ---------- MAIN BODY ---------- */
         .main {
             flex: 1;
-            padding: 32px 0 48px;
+            padding: 36px 0 56px;
         }
 
-        /* ---------- VIEWS ---------- */
         .view {
             display: none;
-            animation: fadeUp 0.35s ease;
+            animation: fadeIn 0.3s ease;
         }
         .view.active {
             display: block;
         }
 
-        @keyframes fadeUp {
-            0% {
+        @keyframes fadeIn {
+            from {
                 opacity: 0;
-                transform: translateY(12px);
+                transform: translateY(10px);
             }
-            100% {
+            to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
 
-        /* ---------- DASHBOARD ---------- */
+        /* ---------- DASHBOARD STATS ---------- */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+            gap: 22px;
             margin-bottom: 36px;
         }
         .stat-card {
-            background: #fff;
-            padding: 22px 24px;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow);
-            border: 1px solid var(--gray-200);
+            background: var(--bg-surface);
+            padding: 24px;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-card);
+            border: 1px solid var(--border-color);
+            position: relative;
+            overflow: hidden;
+            transition: var(--transition);
+        }
+        .stat-card:hover {
+            transform: translateY(-3px);
+            border-color: var(--primary);
+            box-shadow: var(--shadow-glow);
+        }
+        .stat-card .header-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+        .stat-card .icon {
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: rgba(99, 102, 241, 0.12);
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.25rem;
+        }
+        .stat-card .trend-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 20px;
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
         }
         .stat-card .label {
             font-size: 0.8rem;
-            font-weight: 500;
-            color: var(--gray-500);
+            font-weight: 600;
+            color: var(--text-muted);
             text-transform: uppercase;
-            letter-spacing: 0.04em;
+            letter-spacing: 0.05em;
         }
         .stat-card .value {
-            font-size: 1.8rem;
-            font-weight: 700;
-            color: var(--gray-900);
-            margin-top: 4px;
-        }
-        .stat-card .icon {
-            font-size: 1.4rem;
-            color: var(--primary-light);
-            margin-bottom: 6px;
+            font-size: 2rem;
+            font-weight: 800;
+            color: #ffffff;
+            margin-top: 6px;
+            letter-spacing: -0.02em;
         }
 
         .recent-section {
-            background: #fff;
-            border-radius: var(--radius);
-            border: 1px solid var(--gray-200);
-            padding: 24px;
-            box-shadow: var(--shadow);
+            background: var(--bg-surface);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            padding: 28px;
+            box-shadow: var(--shadow-card);
         }
         .recent-section h3 {
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 16px;
-            color: var(--gray-700);
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         .recent-list {
             list-style: none;
@@ -499,442 +580,393 @@
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 12px 0;
-            border-bottom: 1px solid var(--gray-100);
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border-color);
         }
         .recent-list li:last-child {
             border-bottom: none;
         }
-        .recent-list .order-id {
-            font-weight: 500;
-        }
-        .recent-list .order-total {
-            font-weight: 600;
-            color: var(--gray-900);
-        }
-        .recent-list .order-date {
-            font-size: 0.8rem;
-            color: var(--gray-400);
-        }
 
-        /* ---------- PRODUCTS ---------- */
+        /* ---------- PRODUCTS VIEW ---------- */
         .products-toolbar {
             display: flex;
             flex-wrap: wrap;
             align-items: center;
-            gap: 12px;
-            margin-bottom: 28px;
-            background: #fff;
-            padding: 16px 20px;
-            border-radius: var(--radius);
-            border: 1px solid var(--gray-200);
-            box-shadow: var(--shadow);
+            gap: 16px;
+            margin-bottom: 30px;
+            background: var(--bg-surface);
+            padding: 18px 22px;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-card);
         }
         .products-toolbar .search-wrap {
             flex: 1;
-            min-width: 180px;
+            min-width: 220px;
             display: flex;
             align-items: center;
-            gap: 10px;
-            background: var(--gray-50);
-            padding: 0 14px;
-            border-radius: 8px;
-            border: 1px solid var(--gray-200);
+            gap: 12px;
+            background: var(--bg-card);
+            padding: 0 16px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
             transition: var(--transition);
         }
         .products-toolbar .search-wrap:focus-within {
             border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+            box-shadow: 0 0 0 3px var(--primary-glow);
         }
         .products-toolbar .search-wrap i {
-            color: var(--gray-400);
+            color: var(--text-muted);
         }
         .products-toolbar .search-wrap input {
             border: none;
             background: transparent;
-            padding: 10px 0;
+            padding: 11px 0;
             width: 100%;
             outline: none;
             font-size: 0.9rem;
+            color: var(--text-main);
         }
         .products-toolbar .filter-group {
             display: flex;
-            gap: 8px;
+            gap: 12px;
             flex-wrap: wrap;
             align-items: center;
         }
         .products-toolbar .filter-group select {
-            padding: 8px 14px;
-            border-radius: 8px;
-            border: 1px solid var(--gray-200);
-            background: var(--gray-50);
-            font-size: 0.85rem;
-            color: var(--gray-700);
+            padding: 10px 16px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
+            background: var(--bg-card);
+            font-size: 0.88rem;
+            color: var(--text-main);
             outline: none;
         }
 
         .product-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 20px;
+            grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+            gap: 22px;
         }
         .product-card {
-            background: #fff;
-            border-radius: var(--radius);
-            border: 1px solid var(--gray-200);
-            padding: 20px 18px 18px;
-            box-shadow: var(--shadow);
+            background: var(--bg-surface);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            padding: 22px 20px;
+            box-shadow: var(--shadow-card);
             transition: var(--transition);
             display: flex;
             flex-direction: column;
             position: relative;
+            overflow: hidden;
         }
         .product-card:hover {
-            transform: translateY(-4px);
-            box-shadow: var(--shadow-lg);
-            border-color: var(--primary-light);
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-glow);
+            border-color: var(--primary);
         }
         .product-card .card-header-actions {
             position: absolute;
-            top: 12px;
-            right: 12px;
+            top: 14px;
+            right: 14px;
             display: flex;
-            gap: 4px;
+            gap: 6px;
         }
         .product-card .card-header-actions button {
-            width: 28px;
-            height: 28px;
-            border-radius: 6px;
-            color: var(--gray-400);
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            color: var(--text-muted);
+            background: rgba(255, 255, 255, 0.05);
             display: inline-flex;
             align-items: center;
             justify-content: center;
             transition: var(--transition);
-            font-size: 0.8rem;
+            font-size: 0.85rem;
         }
         .product-card .card-header-actions button.btn-edit:hover {
             color: var(--primary);
-            background: var(--primary-bg);
+            background: rgba(99, 102, 241, 0.15);
         }
         .product-card .card-header-actions button.btn-delete:hover {
             color: var(--danger);
-            background: #fee2e2;
+            background: rgba(239, 68, 68, 0.15);
         }
 
         .product-card .emoji {
-            font-size: 2.6rem;
-            margin-bottom: 8px;
+            font-size: 3rem;
+            margin-bottom: 12px;
+            display: inline-block;
         }
         .product-card .name {
-            font-weight: 600;
-            font-size: 1rem;
-            color: var(--gray-800);
+            font-weight: 700;
+            font-size: 1.05rem;
+            color: #ffffff;
         }
-        .product-card .category {
-            font-size: 0.75rem;
-            color: var(--gray-400);
+        .product-card .category-pill {
+            display: inline-block;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: var(--accent-cyan);
+            background: rgba(6, 182, 212, 0.12);
+            padding: 3px 9px;
+            border-radius: 20px;
             text-transform: uppercase;
-            letter-spacing: 0.04em;
-            margin-top: 2px;
+            letter-spacing: 0.05em;
+            margin-top: 6px;
+            align-self: flex-start;
         }
         .product-card .price {
-            font-weight: 700;
-            font-size: 1.15rem;
-            color: var(--gray-900);
-            margin: 8px 0 4px;
+            font-weight: 800;
+            font-size: 1.25rem;
+            color: #ffffff;
+            margin: 12px 0 4px;
         }
         .product-card .stock {
-            font-size: 0.75rem;
-            color: var(--gray-500);
-            margin-bottom: 12px;
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-bottom: 16px;
         }
         .product-card .stock.low {
             color: var(--danger);
+            font-weight: 600;
         }
         .product-card .actions {
             display: flex;
             gap: 8px;
             margin-top: auto;
         }
-        .product-card .actions .btn {
-            flex: 1;
-            justify-content: center;
-            padding: 8px 0;
-            font-size: 0.8rem;
-        }
 
-        /* ---------- CART ---------- */
+        /* ---------- CART VIEW ---------- */
         .cart-view {
             display: grid;
-            grid-template-columns: 1fr 340px;
-            gap: 28px;
+            grid-template-columns: 1fr 360px;
+            gap: 30px;
         }
-        @media (max-width: 820px) {
+        @media (max-width: 860px) {
             .cart-view {
                 grid-template-columns: 1fr;
             }
         }
 
         .cart-items {
-            background: #fff;
-            border-radius: var(--radius);
-            border: 1px solid var(--gray-200);
-            padding: 20px;
-            box-shadow: var(--shadow);
-            min-height: 200px;
+            background: var(--bg-surface);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            padding: 24px;
+            box-shadow: var(--shadow-card);
+            min-height: 220px;
         }
         .cart-items .empty {
             text-align: center;
-            padding: 48px 0;
-            color: var(--gray-400);
+            padding: 56px 0;
+            color: var(--text-muted);
         }
         .cart-items .empty i {
-            font-size: 3rem;
-            margin-bottom: 12px;
+            font-size: 3.5rem;
+            margin-bottom: 16px;
             display: block;
-            color: var(--gray-300);
+            color: var(--text-dim);
         }
 
         .cart-item {
             display: flex;
             align-items: center;
-            gap: 16px;
-            padding: 14px 0;
-            border-bottom: 1px solid var(--gray-100);
+            gap: 18px;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border-color);
         }
         .cart-item:last-child {
             border-bottom: none;
         }
         .cart-item .emoji {
-            font-size: 2rem;
-            width: 48px;
+            font-size: 2.2rem;
+            width: 52px;
             text-align: center;
         }
         .cart-item .info {
             flex: 1;
         }
         .cart-item .info .name {
-            font-weight: 500;
+            font-weight: 600;
+            color: #ffffff;
         }
         .cart-item .info .price {
             font-size: 0.85rem;
-            color: var(--gray-500);
+            color: var(--text-muted);
         }
         .cart-item .qty-control {
             display: flex;
             align-items: center;
-            gap: 8px;
-            background: var(--gray-100);
-            padding: 2px 6px;
-            border-radius: 8px;
+            gap: 10px;
+            background: var(--bg-card);
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border-color);
         }
         .cart-item .qty-control button {
-            width: 28px;
-            height: 28px;
+            width: 30px;
+            height: 30px;
             border-radius: 6px;
-            font-weight: 600;
-            color: var(--gray-600);
+            font-weight: 700;
+            color: var(--text-main);
             transition: var(--transition);
         }
         .cart-item .qty-control button:hover {
-            background: var(--gray-200);
+            background: var(--primary);
+            color: #ffffff;
         }
         .cart-item .qty-control span {
             min-width: 24px;
             text-align: center;
-            font-weight: 500;
+            font-weight: 600;
         }
         .cart-item .item-total {
-            font-weight: 600;
-            min-width: 60px;
+            font-weight: 700;
+            min-width: 70px;
             text-align: right;
-        }
-        .cart-item .remove-btn {
-            color: var(--gray-400);
-            padding: 4px 8px;
-            border-radius: 6px;
-            transition: var(--transition);
-        }
-        .cart-item .remove-btn:hover {
-            color: var(--danger);
-            background: #fef2f2;
+            color: #ffffff;
         }
 
-        /* Cart summary */
         .cart-summary {
-            background: #fff;
-            border-radius: var(--radius);
-            border: 1px solid var(--gray-200);
-            padding: 24px;
-            box-shadow: var(--shadow);
+            background: var(--bg-surface);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            padding: 28px;
+            box-shadow: var(--shadow-card);
             align-self: start;
             position: sticky;
             top: 100px;
         }
         .cart-summary h3 {
-            font-size: 1rem;
-            font-weight: 600;
-            margin-bottom: 16px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 20px;
+            color: #ffffff;
         }
         .cart-summary .row {
             display: flex;
             justify-content: space-between;
-            padding: 8px 0;
-            font-size: 0.9rem;
-            color: var(--gray-600);
+            padding: 10px 0;
+            font-size: 0.92rem;
+            color: var(--text-muted);
         }
         .cart-summary .row.total {
-            font-weight: 700;
-            font-size: 1.1rem;
-            color: var(--gray-900);
-            border-top: 2px solid var(--gray-200);
-            padding-top: 14px;
-            margin-top: 8px;
-        }
-        .cart-summary .btn {
-            margin-top: 16px;
+            font-weight: 800;
+            font-size: 1.2rem;
+            color: #ffffff;
+            border-top: 1px solid var(--border-color);
+            padding-top: 16px;
+            margin-top: 10px;
         }
 
-        /* ---------- ORDERS ---------- */
+        /* ---------- ORDERS VIEW ---------- */
         .orders-list {
-            background: #fff;
-            border-radius: var(--radius);
-            border: 1px solid var(--gray-200);
-            padding: 20px;
-            box-shadow: var(--shadow);
-        }
-        .orders-list .empty {
-            text-align: center;
-            padding: 48px 0;
-            color: var(--gray-400);
+            background: var(--bg-surface);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            padding: 24px;
+            box-shadow: var(--shadow-card);
         }
         .order-item {
-            padding: 18px 0;
-            border-bottom: 1px solid var(--gray-100);
+            padding: 20px 0;
+            border-bottom: 1px solid var(--border-color);
             display: flex;
             flex-wrap: wrap;
             align-items: center;
             justify-content: space-between;
-            gap: 12px;
+            gap: 16px;
         }
         .order-item:last-child {
             border-bottom: none;
         }
-        .order-item .left {
-            display: flex;
-            flex-direction: column;
-            gap: 2px;
-        }
-        .order-item .left .id {
-            font-weight: 600;
-        }
-        .order-item .left .meta {
-            font-size: 0.8rem;
-            color: var(--gray-400);
-        }
-        .order-item .right {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-        .order-item .right .total {
-            font-weight: 700;
-            font-size: 1.05rem;
-        }
         .order-item .status {
-            padding: 4px 14px;
+            padding: 5px 14px;
             border-radius: 20px;
-            font-size: 0.7rem;
-            font-weight: 600;
+            font-size: 0.72rem;
+            font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.04em;
+            letter-spacing: 0.05em;
         }
         .status-completed {
-            background: #dcfce7;
-            color: #166534;
-        }
-        .status-pending {
-            background: #fef3c7;
-            color: #92400e;
-        }
-        .status-cancelled {
-            background: #fee2e2;
-            color: #991b1b;
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+            border: 1px solid rgba(16, 185, 129, 0.3);
         }
 
-        /* ---------- ABOUT ---------- */
+        /* ---------- ABOUT VIEW ---------- */
         .about-content {
-            background: #fff;
-            border-radius: var(--radius);
-            border: 1px solid var(--gray-200);
-            padding: 40px 36px;
-            box-shadow: var(--shadow);
-            max-width: 720px;
+            background: var(--bg-surface);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            padding: 44px 38px;
+            box-shadow: var(--shadow-card);
+            max-width: 760px;
             margin: 0 auto;
         }
         .about-content h2 {
             font-size: 1.8rem;
-            font-weight: 700;
-            margin-bottom: 12px;
+            font-weight: 800;
+            margin-bottom: 16px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 14px;
+            color: #ffffff;
         }
         .about-content h2 i {
             color: var(--primary);
         }
         .about-content p {
-            color: var(--gray-600);
+            color: var(--text-muted);
             line-height: 1.7;
-            margin-bottom: 16px;
+            margin-bottom: 18px;
+            font-size: 0.95rem;
         }
         .about-content .feature-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-            gap: 16px;
-            margin: 24px 0;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 18px;
+            margin: 28px 0;
         }
         .about-content .feature-item {
-            background: var(--gray-50);
-            padding: 16px;
-            border-radius: 8px;
+            background: var(--bg-card);
+            padding: 20px;
+            border-radius: var(--radius-sm);
             text-align: center;
-            border: 1px solid var(--gray-200);
+            border: 1px solid var(--border-color);
         }
         .about-content .feature-item i {
-            font-size: 1.6rem;
-            color: var(--primary);
+            font-size: 1.8rem;
+            color: var(--accent-cyan);
             display: block;
-            margin-bottom: 6px;
-        }
-        .about-content .feature-item span {
-            font-weight: 500;
-            font-size: 0.9rem;
+            margin-bottom: 10px;
         }
 
         /* ---------- TOAST ---------- */
         .toast-container {
             position: fixed;
-            bottom: 24px;
-            right: 24px;
+            bottom: 28px;
+            right: 28px;
             z-index: 999;
             display: flex;
             flex-direction: column;
-            gap: 10px;
-            max-width: 360px;
+            gap: 12px;
+            max-width: 380px;
             width: 100%;
         }
         .toast {
-            background: #1f2937;
-            color: #f9fafb;
-            padding: 14px 20px;
-            border-radius: var(--radius);
-            box-shadow: var(--shadow-lg);
+            background: var(--bg-surface);
+            color: var(--text-main);
+            padding: 16px 22px;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-card), 0 0 20px rgba(0,0,0,0.4);
+            border: 1px solid var(--border-color);
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 14px;
             animation: slideIn 0.3s ease;
-            font-size: 0.9rem;
+            font-size: 0.92rem;
         }
         .toast.success {
             border-left: 4px solid var(--success);
@@ -945,36 +977,24 @@
         .toast.info {
             border-left: 4px solid var(--primary);
         }
-        .toast i {
-            font-size: 1.2rem;
-        }
-        .toast .toast-close {
-            margin-left: auto;
-            color: var(--gray-400);
-            cursor: pointer;
-            padding: 0 4px;
-        }
-        .toast .toast-close:hover {
-            color: #fff;
-        }
 
         @keyframes slideIn {
-            0% {
+            from {
                 opacity: 0;
                 transform: translateX(40px);
             }
-            100% {
+            to {
                 opacity: 1;
                 transform: translateX(0);
             }
         }
 
-        /* ---------- MODAL ---------- */
+        /* ---------- MODAL OVERLAY ---------- */
         .modal-overlay {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.35);
-            backdrop-filter: blur(4px);
+            background: rgba(9, 13, 22, 0.75);
+            backdrop-filter: blur(8px);
             z-index: 200;
             display: none;
             align-items: center;
@@ -985,65 +1005,36 @@
             display: flex;
         }
         .modal {
-            background: #fff;
-            border-radius: var(--radius);
-            max-width: 460px;
+            background: var(--bg-surface);
+            border-radius: var(--radius-md);
+            max-width: 480px;
             width: 100%;
-            padding: 32px 28px;
-            box-shadow: var(--shadow-lg);
-            animation: fadeUp 0.3s ease;
+            padding: 36px 32px;
+            box-shadow: var(--shadow-card), 0 0 40px var(--primary-glow);
+            border: 1px solid var(--border-color);
+            animation: fadeIn 0.3s ease;
         }
         .modal h2 {
-            font-size: 1.25rem;
-            font-weight: 600;
+            font-size: 1.35rem;
+            font-weight: 700;
             margin-bottom: 8px;
+            color: #ffffff;
         }
         .modal p {
-            color: var(--gray-500);
+            color: var(--text-muted);
             font-size: 0.9rem;
-            margin-bottom: 20px;
+            margin-bottom: 22px;
         }
         .modal .modal-actions {
             display: flex;
             gap: 12px;
             justify-content: flex-end;
         }
-        .modal .form-group {
-            margin-bottom: 14px;
-        }
-        .modal .form-group label {
-            display: block;
-            font-weight: 500;
-            font-size: 0.85rem;
-            color: var(--gray-700);
-            margin-bottom: 4px;
-        }
-        .modal .form-group input, .modal .form-group select {
-            width: 100%;
-            padding: 10px 12px;
-            border: 1px solid var(--gray-200);
-            border-radius: 8px;
-            font-size: 0.9rem;
-            outline: none;
-            background: var(--gray-50);
-        }
-        .modal .form-group input:focus, .modal .form-group select:focus {
-            border-color: var(--primary);
-            background: #fff;
-        }
 
-        .text-muted {
-            color: var(--gray-400);
-        }
-        .mt-12 {
-            margin-top: 12px;
-        }
-        .mb-8 {
-            margin-bottom: 8px;
-        }
-        .hidden {
-            display: none !important;
-        }
+        .text-muted { color: var(--text-muted); }
+        .mt-12 { margin-top: 12px; }
+        .mb-8 { margin-bottom: 8px; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
@@ -1196,31 +1187,43 @@
                 <section class="view active" id="view-dashboard">
                     <div class="stats-grid" id="statsGrid">
                         <div class="stat-card">
-                            <div class="icon"><i class="fas fa-dollar-sign"></i></div>
+                            <div class="header-row">
+                                <div class="icon"><i class="fas fa-dollar-sign"></i></div>
+                                <div class="trend-pill"><i class="fas fa-arrow-up"></i> +14.2%</div>
+                            </div>
                             <div class="label">Total Revenue</div>
-                            <div class="value" id="statRevenue">$0</div>
+                            <div class="value" id="statRevenue">$0.00</div>
                         </div>
                         <div class="stat-card">
-                            <div class="icon"><i class="fas fa-shopping-bag"></i></div>
+                            <div class="header-row">
+                                <div class="icon"><i class="fas fa-shopping-bag"></i></div>
+                                <div class="trend-pill"><i class="fas fa-arrow-up"></i> +8.1%</div>
+                            </div>
                             <div class="label">Orders</div>
                             <div class="value" id="statOrders">0</div>
                         </div>
                         <div class="stat-card">
-                            <div class="icon"><i class="fas fa-boxes"></i></div>
+                            <div class="header-row">
+                                <div class="icon"><i class="fas fa-boxes"></i></div>
+                                <div class="trend-pill"><i class="fas fa-arrow-up"></i> +5.4%</div>
+                            </div>
                             <div class="label">Products Sold</div>
                             <div class="value" id="statSold">0</div>
                         </div>
                         <div class="stat-card">
-                            <div class="icon"><i class="fas fa-users"></i></div>
+                            <div class="header-row">
+                                <div class="icon"><i class="fas fa-users"></i></div>
+                                <div class="trend-pill"><i class="fas fa-arrow-up"></i> +12.0%</div>
+                            </div>
                             <div class="label">Customers</div>
                             <div class="value" id="statCustomers">0</div>
                         </div>
                     </div>
 
                     <div class="recent-section">
-                        <h3><i class="fas fa-clock" style="color:var(--gray-400);margin-right:8px;"></i>Recent Orders</h3>
+                        <h3><i class="fas fa-clock" style="color:var(--accent-cyan);"></i> Recent Orders</h3>
                         <ul class="recent-list" id="recentOrders">
-                            <li style="padding:24px 0;text-align:center;color:var(--gray-400);">No orders yet.</li>
+                            <li style="padding:28px 0;text-align:center;color:var(--text-muted);">No orders placed yet.</li>
                         </ul>
                     </div>
                 </section>
@@ -1230,7 +1233,7 @@
                     <div class="products-toolbar">
                         <div class="search-wrap">
                             <i class="fas fa-search"></i>
-                            <input type="text" id="searchInput" placeholder="Search products…" />
+                            <input type="text" id="searchInput" placeholder="Search products by name or category…" />
                         </div>
                         <div class="filter-group">
                             <select id="categoryFilter">
@@ -1277,7 +1280,7 @@
                 <section class="view" id="view-orders">
                     <div class="orders-list" id="ordersList">
                         <div class="empty">
-                            <i class="fas fa-receipt" style="font-size:2.4rem;display:block;margin-bottom:12px;color:var(--gray-300);"></i>
+                            <i class="fas fa-receipt" style="font-size:2.8rem;display:block;margin-bottom:14px;color:var(--text-dim);"></i>
                             <p>No orders placed yet.</p>
                         </div>
                     </div>
@@ -1288,9 +1291,7 @@
                     <div class="about-content">
                         <h2><i class="fas fa-store"></i> About NovaShop</h2>
                         <p>
-                            NovaShop is a modern sales management system built for small businesses and retailers.
-                            It provides a complete workflow for managing products, processing orders, and tracking
-                            sales performance – all in one intuitive dashboard.
+                            NovaShop is a high-performance sales management & POS platform built with Amazon Cognito, AWS Serverless architecture, and DynamoDB.
                         </p>
                         <div class="feature-grid">
                             <div class="feature-item">
@@ -1310,11 +1311,8 @@
                                 <span>Order History</span>
                             </div>
                         </div>
-                        <p>
-                            Built with Amazon Cognito Authentication & AWS Serverless services.
-                        </p>
-                        <p style="margin-top:8px;font-size:0.85rem;color:var(--gray-400);">
-                            <i class="fas fa-code"></i> Version 2.0 · &copy; 2026 NovaShop
+                        <p style="margin-top:10px;font-size:0.85rem;color:var(--text-muted);">
+                            <i class="fas fa-shield-alt"></i> Amazon Cognito Secured Auth · &copy; 2026 NovaShop
                         </p>
                     </div>
                 </section>
@@ -1326,14 +1324,14 @@
     <!-- ===== CHECKOUT MODAL ===== -->
     <div class="modal-overlay" id="checkoutModal">
         <div class="modal">
-            <h2><i class="fas fa-check-circle" style="color:var(--success);margin-right:10px;"></i>Confirm Order</h2>
-            <p>Are you sure you want to place this order? You cannot undo this action.</p>
-            <div style="background:var(--gray-50);padding:14px;border-radius:8px;margin-bottom:20px;">
-                <div style="display:flex;justify-content:space-between;font-weight:500;">
+            <h2><i class="fas fa-check-circle" style="color:var(--success);margin-right:10px;"></i> Confirm Order</h2>
+            <p>Are you sure you want to place this order?</p>
+            <div style="background:var(--bg-card);padding:16px;border-radius:var(--radius-sm);margin-bottom:20px;border:1px solid var(--border-color);">
+                <div style="display:flex;justify-content:space-between;font-weight:700;color:#ffffff;">
                     <span>Total</span>
                     <span id="modalTotal">$0.00</span>
                 </div>
-                <div style="font-size:0.8rem;color:var(--gray-400);margin-top:4px;">
+                <div style="font-size:0.82rem;color:var(--text-muted);margin-top:4px;">
                     <span id="modalItemCount">0 items</span>
                 </div>
             </div>
@@ -1347,7 +1345,7 @@
     <!-- ===== PRODUCT ADD/EDIT MODAL ===== -->
     <div class="modal-overlay" id="productModal">
         <div class="modal">
-            <h2 id="productModalTitle"><i class="fas fa-box" style="color:var(--primary);margin-right:10px;"></i>Add New Product</h2>
+            <h2 id="productModalTitle"><i class="fas fa-box" style="color:var(--primary);margin-right:10px;"></i> Add New Product</h2>
             <p id="productModalSubtitle">Fill in product details below.</p>
 
             <form id="productForm" autocomplete="off">
@@ -1367,7 +1365,7 @@
                             <option value="Toys">Toys</option>
                         </select>
                     </div>
-                    <div class="form-group" style="width:100px;">
+                    <div class="form-group" style="width:110px;">
                         <label for="prodEmojiInput">Emoji</label>
                         <input type="text" id="prodEmojiInput" placeholder="📦" value="📦" required />
                     </div>
@@ -1383,7 +1381,7 @@
                     </div>
                 </div>
 
-                <div class="modal-actions" style="margin-top:16px;">
+                <div class="modal-actions" style="margin-top:20px;">
                     <button type="button" class="btn btn-outline" id="productModalCancel">Cancel</button>
                     <button type="submit" class="btn btn-primary" id="productModalSave"><i class="fas fa-save"></i> Save Product</button>
                 </div>
@@ -1394,8 +1392,8 @@
     <!-- ===== DELETE PRODUCT CONFIRMATION MODAL ===== -->
     <div class="modal-overlay" id="deleteProductModal">
         <div class="modal">
-            <h2><i class="fas fa-exclamation-triangle" style="color:var(--danger);margin-right:10px;"></i>Delete Product</h2>
-            <p>Are you sure you want to delete <strong id="deleteProdNameDisplay">this product</strong>? This action cannot be undone.</p>
+            <h2><i class="fas fa-exclamation-triangle" style="color:var(--danger);margin-right:10px;"></i> Delete Product</h2>
+            <p>Are you sure you want to delete <strong id="deleteProdNameDisplay" style="color:#fff;">this product</strong>? This action cannot be undone.</p>
             <div class="modal-actions">
                 <button class="btn btn-outline" id="deleteProductCancel">Cancel</button>
                 <button class="btn btn-danger" id="deleteProductConfirm"><i class="fas fa-trash-alt"></i> Delete</button>
