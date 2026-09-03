@@ -60,8 +60,13 @@
 
         a {
             text-decoration: none;
-            color: inherit;
+            color: var(--primary);
+            cursor: pointer;
         }
+        a:hover {
+            text-decoration: underline;
+        }
+
         button {
             cursor: pointer;
             border: none;
@@ -176,7 +181,7 @@
             pointer-events: none;
         }
 
-        /* ---------- LOGIN PAGE ---------- */
+        /* ---------- LOGIN / AUTH PAGE ---------- */
         .login-page {
             min-height: 100vh;
             display: flex;
@@ -188,8 +193,8 @@
         .login-card {
             background: #fff;
             border-radius: var(--radius);
-            padding: 48px 40px;
-            max-width: 400px;
+            padding: 40px 36px;
+            max-width: 440px;
             width: 100%;
             box-shadow: var(--shadow-lg);
             border: 1px solid var(--gray-200);
@@ -214,11 +219,11 @@
         .login-card .subtitle {
             text-align: center;
             color: var(--gray-500);
-            margin-bottom: 28px;
-            font-size: 0.9rem;
+            margin-bottom: 24px;
+            font-size: 0.875rem;
         }
         .login-card .form-group {
-            margin-bottom: 18px;
+            margin-bottom: 16px;
         }
         .login-card .form-group label {
             display: block;
@@ -245,30 +250,46 @@
         .login-card .btn {
             width: 100%;
             justify-content: center;
-            padding: 14px;
-            font-size: 1rem;
+            padding: 12px;
+            font-size: 0.95rem;
             margin-top: 8px;
         }
         .login-card .error-msg {
             color: var(--danger);
             font-size: 0.85rem;
             text-align: center;
-            margin-top: 12px;
-            min-height: 1.5rem;
+            margin-top: 10px;
+            min-height: 1.4rem;
         }
-        .login-card .demo-hint {
-            text-align: center;
-            font-size: 0.8rem;
-            color: var(--gray-400);
-            margin-top: 16px;
-            border-top: 1px solid var(--gray-100);
+        .login-card .auth-footer {
+            margin-top: 18px;
             padding-top: 16px;
+            border-top: 1px solid var(--gray-100);
+            text-align: center;
+            font-size: 0.85rem;
+            color: var(--gray-600);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
         }
-        .login-card .demo-hint code {
-            background: var(--gray-100);
-            padding: 2px 8px;
+        .login-card .code-info {
+            background: var(--primary-bg);
+            border: 1px dashed var(--primary-light);
+            border-radius: 8px;
+            padding: 10px 12px;
+            font-size: 0.8rem;
+            color: var(--gray-700);
+            margin-bottom: 14px;
+            text-align: center;
+            line-height: 1.4;
+        }
+        .login-card .code-info code {
+            background: #fff;
+            padding: 2px 6px;
             border-radius: 4px;
-            font-size: 0.75rem;
+            font-weight: 700;
+            color: var(--primary-dark);
+            border: 1px solid var(--gray-200);
         }
 
         /* ---------- APP (main) ---------- */
@@ -959,57 +980,6 @@
             justify-content: flex-end;
         }
 
-        /* ---------- RESPONSIVE ---------- */
-        @media (max-width: 768px) {
-            .header-inner {
-                flex-wrap: wrap;
-                height: auto;
-                padding: 12px 0;
-                gap: 12px;
-            }
-            .nav-tabs {
-                order: 3;
-                width: 100%;
-                justify-content: center;
-                flex-wrap: wrap;
-            }
-            .nav-tab {
-                font-size: 0.75rem;
-                padding: 6px 12px;
-            }
-            .product-grid {
-                grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-            }
-            .stat-card .value {
-                font-size: 1.4rem;
-            }
-            .cart-view {
-                grid-template-columns: 1fr;
-            }
-            .cart-summary {
-                position: static;
-            }
-            .products-toolbar {
-                flex-direction: column;
-                align-items: stretch;
-            }
-            .login-card {
-                padding: 32px 24px;
-            }
-            .about-content {
-                padding: 24px 16px;
-            }
-        }
-
-        @media (max-width: 480px) {
-            .product-grid {
-                grid-template-columns: 1fr 1fr;
-            }
-            .stats-grid {
-                grid-template-columns: 1fr 1fr;
-            }
-        }
-
         .text-muted {
             color: var(--gray-400);
         }
@@ -1019,11 +989,6 @@
         .mb-8 {
             margin-bottom: 8px;
         }
-        .flex-center {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
         .hidden {
             display: none !important;
         }
@@ -1031,18 +996,20 @@
 </head>
 <body>
 
-    <!-- ===== LOGIN PAGE ===== -->
+    <!-- ===== LOGIN & AMAZON COGNITO AUTH PAGE ===== -->
     <div class="login-page" id="loginPage">
         <div class="login-card">
             <div class="logo">
                 <i class="fas fa-store"></i>
                 Nova<span>Shop</span>
             </div>
-            <div class="subtitle">Sign in to manage your sales</div>
+            <div class="subtitle" id="authSubtitle">Sign in to manage your sales</div>
+
+            <!-- 1. SIGN IN FORM -->
             <form id="loginForm" autocomplete="off">
                 <div class="form-group">
-                    <label for="usernameInput">Username</label>
-                    <input type="text" id="usernameInput" placeholder="Enter username" value="admin" />
+                    <label for="usernameInput">Email or Username</label>
+                    <input type="text" id="usernameInput" placeholder="e.g. eeyong35@gmail.com" value="admin" />
                 </div>
                 <div class="form-group">
                     <label for="passwordInput">Password</label>
@@ -1050,10 +1017,89 @@
                 </div>
                 <button type="submit" class="btn btn-primary"><i class="fas fa-sign-in-alt"></i> Sign In</button>
                 <div class="error-msg" id="loginError"></div>
-                <div class="demo-hint">
-                    <i class="fas fa-info-circle"></i> Demo: <code>admin / password</code>
+
+                <div class="auth-footer">
+                    <div><a id="toForgotPasswordLink">Forgot Password?</a></div>
+                    <div>Don't have an account? <a id="toSignUpLink">Sign Up</a></div>
                 </div>
             </form>
+
+            <!-- 2. SIGN UP FORM -->
+            <form id="signUpForm" class="hidden" autocomplete="off">
+                <div class="form-group">
+                    <label for="signUpNameInput">Full Name</label>
+                    <input type="text" id="signUpNameInput" placeholder="e.g. eyong" value="eyong" />
+                </div>
+                <div class="form-group">
+                    <label for="signUpEmailInput">Email Address</label>
+                    <input type="email" id="signUpEmailInput" placeholder="e.g. eeyong35@gmail.com" value="eeyong35@gmail.com" />
+                </div>
+                <div class="form-group">
+                    <label for="signUpPasswordInput">Password</label>
+                    <input type="password" id="signUpPasswordInput" placeholder="Create password" value="Enow@kelly" />
+                </div>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-user-plus"></i> Sign Up with Cognito</button>
+                <div class="error-msg" id="signUpError"></div>
+
+                <div class="auth-footer">
+                    <div>Already have an account? <a id="toSignInFromSignUp">Sign In</a></div>
+                </div>
+            </form>
+
+            <!-- 3. CONFIRMATION CODE FORM -->
+            <form id="confirmCodeForm" class="hidden" autocomplete="off">
+                <div class="code-info">
+                    An email with a confirmation code was sent to <strong id="confirmEmailDisplay">your email</strong>. Please enter the code below.
+                </div>
+                <div class="code-info" id="codeHint"></div>
+                <div class="form-group">
+                    <label for="confirmCodeInput">Verification Code</label>
+                    <input type="text" id="confirmCodeInput" placeholder="Enter 6-digit code" />
+                </div>
+                <button type="submit" class="btn btn-success"><i class="fas fa-check-circle"></i> Confirm Code & Open Site</button>
+                <div class="error-msg" id="confirmCodeError"></div>
+
+                <div class="auth-footer">
+                    <div><a id="resendCodeBtn"><i class="fas fa-paper-plane"></i> Resend Verification Code</a></div>
+                    <div>Back to <a id="toSignInFromConfirm">Sign In</a></div>
+                </div>
+            </form>
+
+            <!-- 4. FORGOT PASSWORD FORM -->
+            <form id="forgotPasswordForm" class="hidden" autocomplete="off">
+                <div class="form-group">
+                    <label for="forgotEmailInput">Your Email Address</label>
+                    <input type="email" id="forgotEmailInput" placeholder="e.g. eeyong35@gmail.com" value="eeyong35@gmail.com" />
+                </div>
+                <button type="submit" class="btn btn-primary"><i class="fas fa-envelope"></i> Send Password Reset Code</button>
+                <div class="error-msg" id="forgotPasswordError"></div>
+
+                <div class="auth-footer">
+                    <div>Remembered your password? <a id="toSignInFromForgot">Sign In</a></div>
+                </div>
+            </form>
+
+            <!-- 5. CONFIRM FORGOT PASSWORD (RESET) FORM -->
+            <form id="confirmResetForm" class="hidden" autocomplete="off">
+                <div class="code-info">
+                    Reset code sent to <strong id="resetEmailDisplay">your email</strong>.
+                </div>
+                <div class="form-group">
+                    <label for="resetCodeInput">Reset Code</label>
+                    <input type="text" id="resetCodeInput" placeholder="Enter code" />
+                </div>
+                <div class="form-group">
+                    <label for="newPasswordInput">New Password</label>
+                    <input type="password" id="newPasswordInput" placeholder="Enter new password" value="Enow@kelly" />
+                </div>
+                <button type="submit" class="btn btn-success"><i class="fas fa-key"></i> Reset Password</button>
+                <div class="error-msg" id="confirmResetError"></div>
+
+                <div class="auth-footer">
+                    <div>Back to <a id="toSignInFromReset">Sign In</a></div>
+                </div>
+            </form>
+
         </div>
     </div>
 
@@ -1210,8 +1256,7 @@
                             </div>
                         </div>
                         <p>
-                            Built with ❤️ using vanilla JavaScript and a clean, responsive UI. All data is stored
-                            locally in your browser for quick access and privacy.
+                            Built with Amazon Cognito Authentication & AWS Serverless services.
                         </p>
                         <p style="margin-top:8px;font-size:0.85rem;color:var(--gray-400);">
                             <i class="fas fa-code"></i> Version 2.0 · &copy; 2026 NovaShop
@@ -1247,535 +1292,8 @@
     <!-- ===== TOAST CONTAINER ===== -->
     <div class="toast-container" id="toastContainer"></div>
 
-    <!-- ============================================================ -->
-    <!-- ===== JAVASCRIPT ===== -->
-    <script>
-        (function() {
-            'use strict';
-
-            // ---------- DATA ----------
-            let products = [
-                { id: 1, name: 'Wireless Headphones', category: 'Electronics', price: 79.99, stock: 12,
-                emoji: '🎧' },
-                { id: 2, name: 'Smart Watch', category: 'Electronics', price: 149.99, stock: 8, emoji: '⌚' },
-                { id: 3, name: 'Running Shoes', category: 'Clothing', price: 89.99, stock: 15, emoji: '👟' },
-                { id: 4, name: 'Hoodie', category: 'Clothing', price: 49.99, stock: 20, emoji: '🧥' },
-                { id: 5, name: 'Coffee Mug', category: 'Home', price: 12.99, stock: 30, emoji: '☕' },
-                { id: 6, name: 'Desk Lamp', category: 'Home', price: 34.99, stock: 10, emoji: '💡' },
-                { id: 7, name: 'Fiction Novel', category: 'Books', price: 19.99, stock: 25, emoji: '📚' },
-                { id: 8, name: 'Cookbook', category: 'Books', price: 24.99, stock: 18, emoji: '🍳' },
-                { id: 9, name: 'Action Figure', category: 'Toys', price: 29.99, stock: 7, emoji: '🤖' },
-                { id: 10, name: 'Puzzle Set', category: 'Toys', price: 15.99, stock: 14, emoji: '🧩' },
-                { id: 11, name: 'Bluetooth Speaker', category: 'Electronics', price: 59.99, stock: 9, emoji: '🔊' },
-                { id: 12, name: 'Backpack', category: 'Clothing', price: 39.99, stock: 11, emoji: '🎒' },
-            ];
-
-            let cart = [];
-            let orders = [];
-            let orderIdCounter = 1001;
-            let currentUser = null;
-
-            // ---------- AUTH ----------
-            const VALID_USERS = [
-                { username: 'admin', password: 'password' },
-                // add more if needed
-            ];
-
-            // load from localStorage
-            function loadData() {
-                try {
-                    const saved = localStorage.getItem('novashop_data');
-                    if (saved) {
-                        const parsed = JSON.parse(saved);
-                        if (parsed.cart) cart = parsed.cart;
-                        if (parsed.orders) orders = parsed.orders;
-                        if (parsed.orderIdCounter) orderIdCounter = parsed.orderIdCounter;
-                        if (parsed.products) {
-                            products = products.map(p => {
-                                const found = parsed.products.find(sp => sp.id === p.id);
-                                return found ? { ...p, stock: found.stock } : p;
-                            });
-                        }
-                        if (parsed.currentUser) currentUser = parsed.currentUser;
-                    }
-                } catch (_) { /* ignore */ }
-            }
-
-            function saveData() {
-                try {
-                    localStorage.setItem('novashop_data', JSON.stringify({
-                        cart,
-                        orders,
-                        orderIdCounter,
-                        products: products.map(p => ({ id: p.id, stock: p.stock })),
-                        currentUser,
-                    }));
-                } catch (_) { /* ignore */ }
-            }
-
-            loadData();
-
-            // DOM refs
-            const $ = (sel, ctx = document) => ctx.querySelector(sel);
-            const $$ = (sel, ctx = document) => [...ctx.querySelectorAll(sel)];
-
-            const loginPage = $('#loginPage');
-            const app = $('#app');
-            const loginForm = $('#loginForm');
-            const usernameInput = $('#usernameInput');
-            const passwordInput = $('#passwordInput');
-            const loginError = $('#loginError');
-
-            const navTabs = $$('.nav-tab');
-            const views = {
-                dashboard: $('#view-dashboard'),
-                products: $('#view-products'),
-                cart: $('#view-cart'),
-                orders: $('#view-orders'),
-                about: $('#view-about'),
-            };
-            const productGrid = $('#productGrid');
-            const cartItems = $('#cartItems');
-            const cartSummary = $('#cartSummary');
-            const cartCount = $('#cartCount');
-            const cartSubtotal = $('#cartSubtotal');
-            const cartTax = $('#cartTax');
-            const cartTotal = $('#cartTotal');
-            const checkoutBtn = $('#checkoutBtn');
-            const searchInput = $('#searchInput');
-            const categoryFilter = $('#categoryFilter');
-            const recentOrders = $('#recentOrders');
-            const ordersList = $('#ordersList');
-            const statRevenue = $('#statRevenue');
-            const statOrders = $('#statOrders');
-            const statSold = $('#statSold');
-            const statCustomers = $('#statCustomers');
-            const userNameSpan = $('#userName');
-            const signOutBtn = $('#signOutBtn');
-
-            // Modal
-            const modal = $('#checkoutModal');
-            const modalTotal = $('#modalTotal');
-            const modalItemCount = $('#modalItemCount');
-            const modalCancel = $('#modalCancel');
-            const modalConfirm = $('#modalConfirm');
-
-            // Toast
-            const toastContainer = $('#toastContainer');
-
-            // ---------- TOAST ----------
-            function toast(message, type = 'info', duration = 3000) {
-                const el = document.createElement('div');
-                el.className = `toast ${type}`;
-                const icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', info: 'fa-info-circle' };
-                el.innerHTML = `
-              <i class="fas ${icons[type] || icons.info}"></i>
-              <span>${message}</span>
-              <span class="toast-close">&times;</span>
-            `;
-                toastContainer.appendChild(el);
-                const close = el.querySelector('.toast-close');
-                close.addEventListener('click', () => el.remove());
-                setTimeout(() => { if (el.parentNode) el.remove(); }, duration);
-            }
-
-            // ---------- AUTH LOGIC ----------
-            function login(username, password) {
-                const user = VALID_USERS.find(u => u.username === username && u.password === password);
-                if (user) {
-                    currentUser = { username: user.username };
-                    saveData();
-                    showApp();
-                    loginError.textContent = '';
-                    toast(`Welcome back, ${user.username}!`, 'success');
-                    return true;
-                } else {
-                    loginError.textContent = 'Invalid username or password.';
-                    return false;
-                }
-            }
-
-            function logout() {
-                currentUser = null;
-                saveData();
-                showLogin();
-                toast('Signed out.', 'info');
-            }
-
-            function showApp() {
-                loginPage.style.display = 'none';
-                app.classList.add('active');
-                userNameSpan.textContent = currentUser.username.charAt(0).toUpperCase() + currentUser.username.slice(1);
-                // Refresh all views
-                renderProducts();
-                renderCart();
-                renderDashboard();
-                renderOrders();
-                switchView('dashboard');
-            }
-
-            function showLogin() {
-                loginPage.style.display = 'flex';
-                app.classList.remove('active');
-            }
-
-            // ---------- INIT AUTH ----------
-            if (currentUser) {
-                showApp();
-            } else {
-                showLogin();
-            }
-
-            // Login form submit
-            loginForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                const username = usernameInput.value.trim();
-                const password = passwordInput.value.trim();
-                if (!username || !password) {
-                    loginError.textContent = 'Please fill in all fields.';
-                    return;
-                }
-                login(username, password);
-            });
-
-            // Sign out
-            signOutBtn.addEventListener('click', logout);
-
-            // ---------- NAV ----------
-            function switchView(viewName) {
-                navTabs.forEach(tab => {
-                    tab.classList.toggle('active', tab.dataset.view === viewName);
-                });
-                Object.keys(views).forEach(key => {
-                    views[key].classList.toggle('active', key === viewName);
-                });
-                if (viewName === 'cart') renderCart();
-                if (viewName === 'dashboard') renderDashboard();
-                if (viewName === 'orders') renderOrders();
-                // Close modal if open
-                modal.classList.remove('open');
-            }
-
-            navTabs.forEach(tab => {
-                tab.addEventListener('click', () => {
-                    switchView(tab.dataset.view);
-                });
-            });
-
-            // Cart trigger in header
-            $('#cartTrigger').addEventListener('click', () => {
-                switchView('cart');
-                navTabs.forEach(t => t.classList.toggle('active', t.dataset.view === 'cart'));
-                Object.keys(views).forEach(key => {
-                    views[key].classList.toggle('active', key === 'cart');
-                });
-            });
-
-            // ---------- PRODUCTS ----------
-            function renderProducts(filter = '') {
-                const cat = categoryFilter.value;
-                const term = filter.toLowerCase().trim();
-
-                let filtered = products.filter(p => {
-                    const matchCat = cat === 'all' || p.category === cat;
-                    const matchTerm = p.name.toLowerCase().includes(term) ||
-                        p.category.toLowerCase().includes(term);
-                    return matchCat && matchTerm;
-                });
-
-                if (!filtered.length) {
-                    productGrid.innerHTML =
-                        `<div style="grid-column:1/-1;text-align:center;padding:48px 0;color:var(--gray-400);">
-                <i class="fas fa-search" style="font-size:2rem;display:block;margin-bottom:12px;"></i>
-                No products found.
-              </div>`;
-                    return;
-                }
-
-                productGrid.innerHTML = filtered.map(p => {
-                    const inCart = cart.find(c => c.id === p.id);
-                    const qtyInCart = inCart ? inCart.qty : 0;
-                    const lowStock = p.stock <= 3;
-                    return `
-                <div class="product-card">
-                  <div class="emoji">${p.emoji}</div>
-                  <div class="name">${p.name}</div>
-                  <div class="category">${p.category}</div>
-                  <div class="price">$${p.price.toFixed(2)}</div>
-                  <div class="stock ${lowStock ? 'low' : ''}">${p.stock} in stock</div>
-                  <div class="actions">
-                    ${qtyInCart > 0 ? `
-                      <button class="btn btn-outline btn-sm" onclick="updateCartQty(${p.id}, -1)" ${p.stock <= 0 ? 'disabled' : ''}>
-                        <i class="fas fa-minus"></i>
-                      </button>
-                      <span style="font-weight:600;padding:0 4px;min-width:24px;text-align:center;">${qtyInCart}</span>
-                      <button class="btn btn-outline btn-sm" onclick="updateCartQty(${p.id}, 1)" ${p.stock <= qtyInCart ? 'disabled' : ''}>
-                        <i class="fas fa-plus"></i>
-                      </button>
-                    ` : `
-                      <button class="btn btn-primary btn-sm" onclick="addToCart(${p.id})" ${p.stock <= 0 ? 'disabled' : ''}>
-                        <i class="fas fa-cart-plus"></i> Add
-                      </button>
-                    `}
-                  </div>
-                </div>
-              `;
-                }).join('');
-            }
-
-            // Expose for inline onclick
-            window.addToCart = function(productId) {
-                const product = products.find(p => p.id === productId);
-                if (!product) return;
-                if (product.stock <= 0) {
-                    toast('Out of stock!', 'error');
-                    return;
-                }
-                const existing = cart.find(c => c.id === productId);
-                if (existing) {
-                    if (existing.qty >= product.stock) {
-                        toast('Not enough stock!', 'error');
-                        return;
-                    }
-                    existing.qty += 1;
-                } else {
-                    cart.push({ ...product, qty: 1 });
-                }
-                saveData();
-                renderCart();
-                renderProducts(searchInput.value);
-                toast(`Added ${product.name} to cart`, 'success');
-            };
-
-            window.updateCartQty = function(productId, delta) {
-                const product = products.find(p => p.id === productId);
-                if (!product) return;
-                const item = cart.find(c => c.id === productId);
-                if (!item) return;
-                const newQty = item.qty + delta;
-                if (newQty <= 0) {
-                    cart = cart.filter(c => c.id !== productId);
-                    toast(`Removed ${product.name} from cart`, 'info');
-                } else if (newQty > product.stock) {
-                    toast('Not enough stock!', 'error');
-                    return;
-                } else {
-                    item.qty = newQty;
-                }
-                saveData();
-                renderCart();
-                renderProducts(searchInput.value);
-            };
-
-            // Search & filter
-            searchInput.addEventListener('input', () => renderProducts(searchInput.value));
-            categoryFilter.addEventListener('change', () => renderProducts(searchInput.value));
-
-            // ---------- CART ----------
-            function renderCart() {
-                const count = cart.reduce((sum, c) => sum + c.qty, 0);
-                cartCount.textContent = count;
-
-                if (!cart.length) {
-                    cartItems.innerHTML = `
-                <div class="empty">
-                  <i class="fas fa-shopping-cart"></i>
-                  <p>Your cart is empty.</p>
-                  <button class="btn btn-primary btn-sm mt-12" onclick="switchView('products')">
-                    <i class="fas fa-arrow-left"></i> Browse Products
-                  </button>
-                </div>
-              `;
-                    checkoutBtn.disabled = true;
-                    cartSubtotal.textContent = '$0.00';
-                    cartTax.textContent = '$0.00';
-                    cartTotal.textContent = '$0.00';
-                    return;
-                }
-
-                let html = '';
-                let subtotal = 0;
-                cart.forEach(item => {
-                    const total = item.price * item.qty;
-                    subtotal += total;
-                    html += `
-                <div class="cart-item">
-                  <div class="emoji">${item.emoji}</div>
-                  <div class="info">
-                    <div class="name">${item.name}</div>
-                    <div class="price">$${item.price.toFixed(2)}</div>
-                  </div>
-                  <div class="qty-control">
-                    <button onclick="updateCartQty(${item.id}, -1)"><i class="fas fa-minus"></i></button>
-                    <span>${item.qty}</span>
-                    <button onclick="updateCartQty(${item.id}, 1)" ${item.qty >= (products.find(p=>p.id===item.id)?.stock || 0) ? 'disabled' : ''}>
-                      <i class="fas fa-plus"></i>
-                    </button>
-                  </div>
-                  <div class="item-total">$${total.toFixed(2)}</div>
-                  <button class="remove-btn" onclick="updateCartQty(${item.id}, -${item.qty})"><i class="fas fa-trash-alt"></i></button>
-                </div>
-              `;
-                });
-
-                cartItems.innerHTML = html;
-                checkoutBtn.disabled = false;
-
-                const tax = subtotal * 0.10;
-                const total = subtotal + tax;
-                cartSubtotal.textContent = `$${subtotal.toFixed(2)}`;
-                cartTax.textContent = `$${tax.toFixed(2)}`;
-                cartTotal.textContent = `$${total.toFixed(2)}`;
-            }
-
-            // ---------- CHECKOUT ----------
-            checkoutBtn.addEventListener('click', () => {
-                if (!cart.length) return;
-                const total = cart.reduce((sum, c) => sum + c.price * c.qty, 0);
-                const tax = total * 0.10;
-                const grand = total + tax;
-                modalTotal.textContent = `$${grand.toFixed(2)}`;
-                const count = cart.reduce((s, c) => s + c.qty, 0);
-                modalItemCount.textContent = `${count} items`;
-                modal.classList.add('open');
-            });
-
-            modalCancel.addEventListener('click', () => modal.classList.remove('open'));
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) modal.classList.remove('open');
-            });
-
-            modalConfirm.addEventListener('click', () => {
-                if (!cart.length) return;
-                // Create order
-                const total = cart.reduce((sum, c) => sum + c.price * c.qty, 0);
-                const tax = total * 0.10;
-                const grand = total + tax;
-                const order = {
-                    id: orderIdCounter++,
-                    items: cart.map(c => ({ ...c })),
-                    subtotal: total,
-                    tax: tax,
-                    total: grand,
-                    date: new Date().toISOString(),
-                    status: 'completed',
-                };
-                orders.push(order);
-
-                // Reduce stock
-                cart.forEach(c => {
-                    const prod = products.find(p => p.id === c.id);
-                    if (prod) prod.stock = Math.max(0, prod.stock - c.qty);
-                });
-
-                // Clear cart
-                cart = [];
-                saveData();
-                renderCart();
-                renderProducts(searchInput.value);
-                renderDashboard();
-                renderOrders();
-                modal.classList.remove('open');
-                toast(`Order #${order.id} placed successfully! 🎉`, 'success');
-
-                // Switch to orders view after a beat
-                setTimeout(() => switchView('orders'), 600);
-            });
-
-            // ---------- ORDERS ----------
-            function renderOrders() {
-                if (!orders.length) {
-                    ordersList.innerHTML = `
-                <div class="empty">
-                  <i class="fas fa-receipt" style="font-size:2.4rem;display:block;margin-bottom:12px;color:var(--gray-300);"></i>
-                  <p>No orders placed yet.</p>
-                </div>
-              `;
-                    return;
-                }
-                // show newest first
-                const sorted = [...orders].reverse();
-                ordersList.innerHTML = sorted.map(o => {
-                    const itemCount = o.items.reduce((s, i) => s + i.qty, 0);
-                    const date = new Date(o.date);
-                    const dateStr = date.toLocaleDateString() + ' ' + date.toLocaleTimeString([], { hour: '2-digit',
-                        minute: '2-digit' });
-                    const statusClass = o.status === 'completed' ? 'status-completed' :
-                        o.status === 'pending' ? 'status-pending' : 'status-cancelled';
-                    return `
-                <div class="order-item">
-                  <div class="left">
-                    <div class="id">Order #${o.id}</div>
-                    <div class="meta">${dateStr} · ${itemCount} items</div>
-                  </div>
-                  <div class="right">
-                    <span class="status ${statusClass}">${o.status}</span>
-                    <span class="total">$${o.total.toFixed(2)}</span>
-                  </div>
-                </div>
-              `;
-                }).join('');
-            }
-
-            // ---------- DASHBOARD ----------
-            function renderDashboard() {
-                const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
-                const totalOrders = orders.length;
-                const totalSold = orders.reduce((sum, o) =>
-                    sum + o.items.reduce((s, i) => s + i.qty, 0), 0);
-                const customers = orders.length;
-
-                statRevenue.textContent = `$${totalRevenue.toFixed(2)}`;
-                statOrders.textContent = totalOrders;
-                statSold.textContent = totalSold;
-                statCustomers.textContent = customers;
-
-                // Recent orders (last 5)
-                const recent = [...orders].reverse().slice(0, 5);
-                if (!recent.length) {
-                    recentOrders.innerHTML =
-                        `<li style="padding:24px 0;text-align:center;color:var(--gray-400);">No orders yet.</li>`;
-                    return;
-                }
-                recentOrders.innerHTML = recent.map(o => {
-                    const date = new Date(o.date);
-                    const dateStr = date.toLocaleDateString();
-                    return `
-                <li>
-                  <span><span class="order-id">#${o.id}</span> <span class="order-date">${dateStr}</span></span>
-                  <span class="order-total">$${o.total.toFixed(2)}</span>
-                </li>
-              `;
-                }).join('');
-            }
-
-            // ---------- INIT ----------
-            function init() {
-                renderProducts();
-                renderCart();
-                renderDashboard();
-                renderOrders();
-                // ensure cart count badge
-                const count = cart.reduce((s, c) => s + c.qty, 0);
-                cartCount.textContent = count;
-                checkoutBtn.disabled = !cart.length;
-            }
-
-            // Expose switchView globally for inline usage
-            window.switchView = switchView;
-
-            // Start
-            init();
-
-            // save on unload
-            window.addEventListener('beforeunload', saveData);
-
-            console.log('🛒 NovaShop Sales System loaded.');
-            console.log(`👤 User: ${currentUser ? currentUser.username : 'not logged in'}`);
-            console.log(`📦 ${products.length} products, 🛍️ ${cart.length} cart items, 📋 ${orders.length} orders.`);
-
-        })();
-    </script>
+    <!-- ===== APPLICATION JAVASCRIPT ===== -->
+    <script src="ap.js"></script>
 
 </body>
 </html>
