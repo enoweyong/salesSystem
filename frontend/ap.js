@@ -164,6 +164,39 @@
         }
 
         /**
+         * ResendConfirmationCode: Resends a sign up verification code to user email.
+         */
+        async resendSignUpCode(email) {
+            const cleanEmail = email.trim().toLowerCase();
+
+            if (this.config.useLiveCognito && this.config.clientId) {
+                await this.cognitoRequest('ResendConfirmationCode', {
+                    ClientId: this.config.clientId,
+                    Username: cleanEmail
+                });
+                return { success: true };
+            }
+
+            const users = this.getMockUsers();
+            const user = users[cleanEmail];
+            if (!user) {
+                throw new Error('No account pending verification found for this email address.');
+            }
+
+            const code = Math.floor(100000 + Math.random() * 900000).toString();
+            const codes = this.getMockCodes();
+            codes[cleanEmail] = {
+                type: 'SIGNUP',
+                code: code,
+                createdAt: Date.now()
+            };
+            this.saveMockCodes(codes);
+
+            console.log(`[Amazon Cognito] Resent sign-up verification code to ${cleanEmail}: ${code}`);
+            return { success: true, code };
+        }
+
+        /**
          * ForgotPassword: Initiates password reset by sending a code to user email.
          */
         async forgotPassword(email) {
@@ -620,7 +653,7 @@
         e.preventDefault();
         if (!pendingConfirmEmail) return;
         try {
-            const res = await cognitoAuth.forgotPassword(pendingConfirmEmail);
+            const res = await cognitoAuth.resendSignUpCode(pendingConfirmEmail);
             if (res.code) {
                 codeHint.innerHTML = `<i class="fas fa-key"></i> New verification code sent: <code>${res.code}</code>`;
             }
@@ -1098,11 +1131,46 @@
         }).join('');
     }
 
+    // ============================================================
+    //  THEME SWITCHER MODULE
+    // ============================================================
+    const themeToggleBtn = $('#themeToggleBtn');
+    const themeIcon = $('#themeIcon');
+
+    function applyTheme(theme) {
+        if (theme === 'light') {
+            document.body.classList.add('light-theme');
+            if (themeIcon) {
+                themeIcon.className = 'fas fa-moon';
+                themeIcon.style.color = '#3b82f6';
+            }
+        } else {
+            document.body.classList.remove('light-theme');
+            if (themeIcon) {
+                themeIcon.className = 'fas fa-sun';
+                themeIcon.style.color = 'var(--warning)';
+            }
+        }
+    }
+
+    let savedTheme = localStorage.getItem('novashop_theme') || 'dark';
+    applyTheme(savedTheme);
+
+    if (themeToggleBtn) {
+        themeToggleBtn.addEventListener('click', () => {
+            const isLight = document.body.classList.contains('light-theme');
+            const newTheme = isLight ? 'dark' : 'light';
+            localStorage.setItem('novashop_theme', newTheme);
+            applyTheme(newTheme);
+            toast(`Switched to ${newTheme} mode`, 'info');
+        });
+    }
+
     // Global helper
     window.switchView = switchView;
     window.cognitoAuth = cognitoAuth;
 
     window.addEventListener('beforeunload', saveData);
 
-    console.log('🛒 NovaShop loaded with Product Management & Modern Dashboard UI.');
+    console.log('🛒 NovaShop loaded with Product Management, Dark/Light Theme & Modern Dashboard UI.');
 })();
