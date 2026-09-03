@@ -561,6 +561,7 @@
             display: flex;
             gap: 8px;
             flex-wrap: wrap;
+            align-items: center;
         }
         .products-toolbar .filter-group select {
             padding: 8px 14px;
@@ -586,12 +587,40 @@
             transition: var(--transition);
             display: flex;
             flex-direction: column;
+            position: relative;
         }
         .product-card:hover {
             transform: translateY(-4px);
             box-shadow: var(--shadow-lg);
             border-color: var(--primary-light);
         }
+        .product-card .card-header-actions {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            display: flex;
+            gap: 4px;
+        }
+        .product-card .card-header-actions button {
+            width: 28px;
+            height: 28px;
+            border-radius: 6px;
+            color: var(--gray-400);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition);
+            font-size: 0.8rem;
+        }
+        .product-card .card-header-actions button.btn-edit:hover {
+            color: var(--primary);
+            background: var(--primary-bg);
+        }
+        .product-card .card-header-actions button.btn-delete:hover {
+            color: var(--danger);
+            background: #fee2e2;
+        }
+
         .product-card .emoji {
             font-size: 2.6rem;
             margin-bottom: 8px;
@@ -979,6 +1008,29 @@
             gap: 12px;
             justify-content: flex-end;
         }
+        .modal .form-group {
+            margin-bottom: 14px;
+        }
+        .modal .form-group label {
+            display: block;
+            font-weight: 500;
+            font-size: 0.85rem;
+            color: var(--gray-700);
+            margin-bottom: 4px;
+        }
+        .modal .form-group input, .modal .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid var(--gray-200);
+            border-radius: 8px;
+            font-size: 0.9rem;
+            outline: none;
+            background: var(--gray-50);
+        }
+        .modal .form-group input:focus, .modal .form-group select:focus {
+            border-color: var(--primary);
+            background: #fff;
+        }
 
         .text-muted {
             color: var(--gray-400);
@@ -1189,6 +1241,9 @@
                                 <option value="Books">Books</option>
                                 <option value="Toys">Toys</option>
                             </select>
+                            <button class="btn btn-primary btn-sm" id="addProductBtn">
+                                <i class="fas fa-plus"></i> Add Product
+                            </button>
                         </div>
                     </div>
                     <div class="product-grid" id="productGrid"></div>
@@ -1268,7 +1323,7 @@
         </main>
     </div>
 
-    <!-- ===== MODAL ===== -->
+    <!-- ===== CHECKOUT MODAL ===== -->
     <div class="modal-overlay" id="checkoutModal">
         <div class="modal">
             <h2><i class="fas fa-check-circle" style="color:var(--success);margin-right:10px;"></i>Confirm Order</h2>
@@ -1285,6 +1340,65 @@
             <div class="modal-actions">
                 <button class="btn btn-outline" id="modalCancel">Cancel</button>
                 <button class="btn btn-success" id="modalConfirm"><i class="fas fa-check"></i> Place Order</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== PRODUCT ADD/EDIT MODAL ===== -->
+    <div class="modal-overlay" id="productModal">
+        <div class="modal">
+            <h2 id="productModalTitle"><i class="fas fa-box" style="color:var(--primary);margin-right:10px;"></i>Add New Product</h2>
+            <p id="productModalSubtitle">Fill in product details below.</p>
+
+            <form id="productForm" autocomplete="off">
+                <input type="hidden" id="prodIdInput" />
+                <div class="form-group">
+                    <label for="prodNameInput">Product Name</label>
+                    <input type="text" id="prodNameInput" placeholder="e.g. Wireless Mouse" required />
+                </div>
+                <div style="display:flex;gap:12px;">
+                    <div class="form-group" style="flex:1;">
+                        <label for="prodCategoryInput">Category</label>
+                        <select id="prodCategoryInput" required>
+                            <option value="Electronics">Electronics</option>
+                            <option value="Clothing">Clothing</option>
+                            <option value="Home">Home</option>
+                            <option value="Books">Books</option>
+                            <option value="Toys">Toys</option>
+                        </select>
+                    </div>
+                    <div class="form-group" style="width:100px;">
+                        <label for="prodEmojiInput">Emoji</label>
+                        <input type="text" id="prodEmojiInput" placeholder="📦" value="📦" required />
+                    </div>
+                </div>
+                <div style="display:flex;gap:12px;">
+                    <div class="form-group" style="flex:1;">
+                        <label for="prodPriceInput">Price ($)</label>
+                        <input type="number" step="0.01" min="0" id="prodPriceInput" placeholder="29.99" required />
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label for="prodStockInput">Stock Quantity</label>
+                        <input type="number" min="0" id="prodStockInput" placeholder="10" required />
+                    </div>
+                </div>
+
+                <div class="modal-actions" style="margin-top:16px;">
+                    <button type="button" class="btn btn-outline" id="productModalCancel">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="productModalSave"><i class="fas fa-save"></i> Save Product</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== DELETE PRODUCT CONFIRMATION MODAL ===== -->
+    <div class="modal-overlay" id="deleteProductModal">
+        <div class="modal">
+            <h2><i class="fas fa-exclamation-triangle" style="color:var(--danger);margin-right:10px;"></i>Delete Product</h2>
+            <p>Are you sure you want to delete <strong id="deleteProdNameDisplay">this product</strong>? This action cannot be undone.</p>
+            <div class="modal-actions">
+                <button class="btn btn-outline" id="deleteProductCancel">Cancel</button>
+                <button class="btn btn-danger" id="deleteProductConfirm"><i class="fas fa-trash-alt"></i> Delete</button>
             </div>
         </div>
     </div>

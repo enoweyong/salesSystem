@@ -317,6 +317,7 @@
     let orderIdCounter = 1001;
     let currentUser = null;
     let pendingConfirmEmail = '';
+    let deletingProductId = null;
 
     // ============================================================
     //  DOM REFS
@@ -361,6 +362,25 @@
     const resetCodeInput = $('#resetCodeInput');
     const newPasswordInput = $('#newPasswordInput');
     const confirmResetError = $('#confirmResetError');
+
+    // Product Modal inputs
+    const addProductBtn = $('#addProductBtn');
+    const productModal = $('#productModal');
+    const productModalTitle = $('#productModalTitle');
+    const productForm = $('#productForm');
+    const prodIdInput = $('#prodIdInput');
+    const prodNameInput = $('#prodNameInput');
+    const prodCategoryInput = $('#prodCategoryInput');
+    const prodEmojiInput = $('#prodEmojiInput');
+    const prodPriceInput = $('#prodPriceInput');
+    const prodStockInput = $('#prodStockInput');
+    const productModalCancel = $('#productModalCancel');
+
+    // Delete Modal elements
+    const deleteProductModal = $('#deleteProductModal');
+    const deleteProdNameDisplay = $('#deleteProdNameDisplay');
+    const deleteProductCancel = $('#deleteProductCancel');
+    const deleteProductConfirm = $('#deleteProductConfirm');
 
     // Nav & Views
     const navTabs = $$('.nav-tab');
@@ -428,10 +448,8 @@
                 if (parsed.orders) orders = parsed.orders;
                 if (parsed.orderIdCounter) orderIdCounter = parsed.orderIdCounter;
                 if (parsed.products) {
-                    products = products.map(p => {
-                        const found = parsed.products.find(sp => sp.id === p.id);
-                        return found ? { ...p, stock: found.stock } : p;
-                    });
+                    // Load full product array or merge custom added ones
+                    products = parsed.products;
                 }
                 if (parsed.currentUser) currentUser = parsed.currentUser;
             }
@@ -444,7 +462,7 @@
                 cart,
                 orders,
                 orderIdCounter,
-                products: products.map(p => ({ id: p.id, stock: p.stock })),
+                products,
                 currentUser,
             }));
         } catch (_) { /* ignore */ }
@@ -456,12 +474,10 @@
     //  AUTH UI SWITCHING
     // ============================================================
     function switchAuthView(viewName) {
-        // Hide all auth forms
         [loginForm, signUpForm, confirmCodeForm, forgotPasswordForm, confirmResetForm].forEach(f => {
             if (f) f.classList.add('hidden');
         });
 
-        // Clear error messages
         [loginError, signUpError, confirmCodeError, forgotPasswordError, confirmResetError].forEach(e => {
             if (e) e.textContent = '';
         });
@@ -502,7 +518,6 @@
         switchAuthView('signin');
     }
 
-    // Initialize App Auth State
     if (currentUser) {
         showApp();
     } else {
@@ -513,7 +528,6 @@
     //  AUTH EVENT HANDLERS
     // ============================================================
 
-    // 1. Sign In
     loginForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const username = usernameInput.value.trim();
@@ -541,7 +555,6 @@
         }
     });
 
-    // 2. Sign Up
     signUpForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const name = signUpNameInput.value.trim();
@@ -573,7 +586,6 @@
         }
     });
 
-    // 3. Confirm Code (automatically opens homepage on confirmation)
     confirmCodeForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const code = confirmCodeInput.value.trim();
@@ -587,7 +599,6 @@
             const res = await cognitoAuth.confirmSignUp(pendingConfirmEmail, code);
             confirmCodeError.textContent = '';
 
-            // Set current logged in user and open homepage immediately
             const users = cognitoAuth.getMockUsers();
             const userObj = users[pendingConfirmEmail.toLowerCase()] || res.user || {};
             const username = userObj.name || pendingConfirmEmail.split('@')[0];
@@ -600,13 +611,12 @@
             saveData();
 
             toast(`Account verified successfully! Welcome, ${username}!`, 'success');
-            showApp(); // Opens directly to homepage (Dashboard)
+            showApp();
         } catch (err) {
             confirmCodeError.textContent = err.message || 'Verification failed.';
         }
     });
 
-    // Resend Code
     $('#resendCodeBtn').addEventListener('click', async (e) => {
         e.preventDefault();
         if (!pendingConfirmEmail) return;
@@ -621,7 +631,6 @@
         }
     });
 
-    // 4. Forgot Password
     forgotPasswordForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const email = forgotEmailInput.value.trim();
@@ -644,7 +653,6 @@
         }
     });
 
-    // 5. Confirm Reset Password
     confirmResetForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         const code = resetCodeInput.value.trim();
@@ -669,7 +677,6 @@
         }
     });
 
-    // Navigation Links between Auth Forms
     $('#toSignUpLink').addEventListener('click', (e) => { e.preventDefault(); switchAuthView('signup'); });
     $('#toForgotPasswordLink').addEventListener('click', (e) => { e.preventDefault(); switchAuthView('forgot'); });
     $('#toSignInFromSignUp').addEventListener('click', (e) => { e.preventDefault(); switchAuthView('signin'); });
@@ -677,7 +684,6 @@
     $('#toSignInFromForgot').addEventListener('click', (e) => { e.preventDefault(); switchAuthView('signin'); });
     $('#toSignInFromReset').addEventListener('click', (e) => { e.preventDefault(); switchAuthView('signin'); });
 
-    // Sign Out
     signOutBtn.addEventListener('click', () => {
         currentUser = null;
         saveData();
@@ -699,6 +705,8 @@
         if (viewName === 'dashboard') renderDashboard();
         if (viewName === 'orders') renderOrders();
         modal.classList.remove('open');
+        productModal.classList.remove('open');
+        deleteProductModal.classList.remove('open');
     }
 
     navTabs.forEach(tab => {
@@ -708,7 +716,111 @@
     $('#cartTrigger').addEventListener('click', () => switchView('cart'));
 
     // ============================================================
-    //  PRODUCTS MODULE
+    //  PRODUCT MANAGEMENT (ADD, EDIT, DELETE)
+    // ============================================================
+    function openAddProductModal() {
+        prodIdInput.value = '';
+        prodNameInput.value = '';
+        prodCategoryInput.value = 'Electronics';
+        prodEmojiInput.value = '📦';
+        prodPriceInput.value = '';
+        prodStockInput.value = '';
+        productModalTitle.innerHTML = '<i class="fas fa-box" style="color:var(--primary);margin-right:10px;"></i>Add New Product';
+        productModal.classList.add('open');
+    }
+
+    window.openEditProductModal = function(id) {
+        const product = products.find(p => p.id === id);
+        if (!product) return;
+        prodIdInput.value = product.id;
+        prodNameInput.value = product.name;
+        prodCategoryInput.value = product.category;
+        prodEmojiInput.value = product.emoji || '📦';
+        prodPriceInput.value = product.price;
+        prodStockInput.value = product.stock;
+        productModalTitle.innerHTML = '<i class="fas fa-edit" style="color:var(--primary);margin-right:10px;"></i>Edit Product';
+        productModal.classList.add('open');
+    };
+
+    window.openDeleteProductModal = function(id) {
+        const product = products.find(p => p.id === id);
+        if (!product) return;
+        deletingProductId = id;
+        deleteProdNameDisplay.textContent = product.name;
+        deleteProductModal.classList.add('open');
+    };
+
+    addProductBtn.addEventListener('click', openAddProductModal);
+    productModalCancel.addEventListener('click', () => productModal.classList.remove('open'));
+    deleteProductCancel.addEventListener('click', () => deleteProductModal.classList.remove('open'));
+
+    productForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const idVal = prodIdInput.value;
+        const name = prodNameInput.value.trim();
+        const category = prodCategoryInput.value;
+        const emoji = prodEmojiInput.value.trim() || '📦';
+        const price = parseFloat(prodPriceInput.value);
+        const stock = parseInt(prodStockInput.value, 10);
+
+        if (!name || isNaN(price) || isNaN(stock)) {
+            toast('Please fill in valid product details.', 'error');
+            return;
+        }
+
+        if (idVal) {
+            // Edit existing product
+            const prodId = parseInt(idVal, 10);
+            const product = products.find(p => p.id === prodId);
+            if (product) {
+                product.name = name;
+                product.category = category;
+                product.emoji = emoji;
+                product.price = price;
+                product.stock = stock;
+
+                // Sync cart if present
+                const cartItem = cart.find(c => c.id === prodId);
+                if (cartItem) {
+                    cartItem.name = name;
+                    cartItem.price = price;
+                    cartItem.emoji = emoji;
+                    if (cartItem.qty > stock) cartItem.qty = stock;
+                }
+                toast(`Updated product "${name}"`, 'success');
+            }
+        } else {
+            // Add new product
+            const newId = products.length ? Math.max(...products.map(p => p.id)) + 1 : 1;
+            const newProduct = { id: newId, name, category, price, stock, emoji };
+            products.push(newProduct);
+            toast(`Product "${name}" added successfully!`, 'success');
+        }
+
+        saveData();
+        renderProducts(searchInput.value);
+        renderCart();
+        productModal.classList.remove('open');
+    });
+
+    deleteProductConfirm.addEventListener('click', () => {
+        if (!deletingProductId) return;
+        const product = products.find(p => p.id === deletingProductId);
+        const name = product ? product.name : 'Product';
+
+        products = products.filter(p => p.id !== deletingProductId);
+        cart = cart.filter(c => c.id !== deletingProductId);
+
+        deletingProductId = null;
+        saveData();
+        renderProducts(searchInput.value);
+        renderCart();
+        deleteProductModal.classList.remove('open');
+        toast(`Deleted product "${name}"`, 'info');
+    });
+
+    // ============================================================
+    //  PRODUCTS RENDER MODULE
     // ============================================================
     function renderProducts(filter = '') {
         const cat = categoryFilter.value;
@@ -736,6 +848,14 @@
             const lowStock = p.stock <= 3;
             return `
                 <div class="product-card">
+                    <div class="card-header-actions">
+                        <button class="btn-edit" title="Edit Product" onclick="openEditProductModal(${p.id})">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-delete" title="Delete Product" onclick="openDeleteProductModal(${p.id})">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </div>
                     <div class="emoji">${p.emoji}</div>
                     <div class="name">${p.name}</div>
                     <div class="category">${p.category}</div>
@@ -987,5 +1107,5 @@
 
     window.addEventListener('beforeunload', saveData);
 
-    console.log('🛒 NovaShop loaded with Amazon Cognito Auth.');
+    console.log('🛒 NovaShop loaded with Product Management.');
 })();
