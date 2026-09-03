@@ -233,22 +233,28 @@
             const lowStock = p.stock <= 3;
             return `
                 <div class="product-card">
-                    <div class="emoji">${p.emoji}</div>
+                    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                        <div class="emoji">${p.emoji}</div>
+                        <div style="display:flex;gap:4px;">
+                            <button class="btn btn-ghost btn-sm" onclick="editProduct('${p.id}')" title="Edit Product"><i class="fas fa-edit"></i></button>
+                            <button class="btn btn-ghost btn-sm" onclick="deleteProduct('${p.id}')" title="Delete Product" style="color:var(--danger);"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </div>
                     <div class="name">${p.name}</div>
                     <div class="category">${p.category}</div>
                     <div class="price">$${p.price.toFixed(2)}</div>
                     <div class="stock ${lowStock ? 'low' : ''}">${p.stock} in stock</div>
                     <div class="actions">
                         ${qtyInCart > 0 ? `
-                            <button class="btn btn-outline btn-sm" onclick="updateCartQty(${p.id}, -1)" ${p.stock <= 0 ? 'disabled' : ''}>
+                            <button class="btn btn-outline btn-sm" onclick="updateCartQty('${p.id}', -1)" ${p.stock <= 0 ? 'disabled' : ''}>
                                 <i class="fas fa-minus"></i>
                             </button>
                             <span style="font-weight:600;padding:0 4px;min-width:24px;text-align:center;">${qtyInCart}</span>
-                            <button class="btn btn-outline btn-sm" onclick="updateCartQty(${p.id}, 1)" ${p.stock <= qtyInCart ? 'disabled' : ''}>
+                            <button class="btn btn-outline btn-sm" onclick="updateCartQty('${p.id}', 1)" ${p.stock <= qtyInCart ? 'disabled' : ''}>
                                 <i class="fas fa-plus"></i>
                             </button>
                         ` : `
-                            <button class="btn btn-primary btn-sm" onclick="addToCart(${p.id})" ${p.stock <= 0 ? 'disabled' : ''}>
+                            <button class="btn btn-primary btn-sm" onclick="addToCart('${p.id}')" ${p.stock <= 0 ? 'disabled' : ''}>
                                 <i class="fas fa-cart-plus"></i> Add
                             </button>
                         `}
@@ -490,6 +496,102 @@
             `;
         }).join('');
     }
+
+    // ============================================================
+    //  PRODUCT CRUD OPERATIONS
+    // ============================================================
+    const productModal = $('#productModal');
+    const productForm = $('#productForm');
+    const productModalTitle = $('#productModalTitle');
+    const productIdInput = $('#productIdInput');
+    const productNameInput = $('#productNameInput');
+    const productCategoryInput = $('#productCategoryInput');
+    const productPriceInput = $('#productPriceInput');
+    const productStockInput = $('#productStockInput');
+    const productEmojiInput = $('#productEmojiInput');
+    const addProductBtn = $('#addProductBtn');
+    const productModalCancel = $('#productModalCancel');
+
+    function openProductModal(product = null) {
+        if (product) {
+            productModalTitle.innerHTML = `<i class="fas fa-edit" style="color:var(--primary);margin-right:10px;"></i>Edit Product`;
+            productIdInput.value = product.id;
+            productNameInput.value = product.name;
+            productCategoryInput.value = product.category || 'Electronics';
+            productPriceInput.value = product.price;
+            productStockInput.value = product.stock;
+            productEmojiInput.value = product.emoji || '📦';
+        } else {
+            productModalTitle.innerHTML = `<i class="fas fa-plus-circle" style="color:var(--primary);margin-right:10px;"></i>Add New Product`;
+            productIdInput.value = '';
+            productForm.reset();
+            productEmojiInput.value = '📦';
+        }
+        productModal.classList.add('open');
+    }
+
+    function closeProductModal() {
+        productModal.classList.remove('open');
+    }
+
+    if (addProductBtn) {
+        addProductBtn.addEventListener('click', () => openProductModal());
+    }
+    if (productModalCancel) {
+        productModalCancel.addEventListener('click', closeProductModal);
+    }
+
+    if (productForm) {
+        productForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = productIdInput.value;
+            const payload = {
+                name: productNameInput.value.trim(),
+                category: productCategoryInput.value,
+                price: parseFloat(productPriceInput.value),
+                stock: parseInt(productStockInput.value, 10),
+                emoji: productEmojiInput.value.trim() || '📦',
+            };
+
+            try {
+                if (id) {
+                    // Update
+                    await apiFetch(`/products/${id}`, {
+                        method: 'PUT',
+                        body: JSON.stringify(payload),
+                    });
+                    toast('Product updated successfully', 'success');
+                } else {
+                    // Create
+                    await apiFetch('/products', {
+                        method: 'POST',
+                        body: JSON.stringify(payload),
+                    });
+                    toast('Product created successfully', 'success');
+                }
+                closeProductModal();
+                await loadProducts();
+            } catch (err) {
+                toast('Operation failed: ' + err.message, 'error');
+            }
+        });
+    }
+
+    window.editProduct = function(id) {
+        const product = products.find(p => String(p.id) === String(id));
+        if (product) openProductModal(product);
+    };
+
+    window.deleteProduct = async function(id) {
+        if (!confirm('Are you sure you want to delete this product?')) return;
+        try {
+            await apiFetch(`/products/${id}`, { method: 'DELETE' });
+            toast('Product deleted', 'info');
+            await loadProducts();
+        } catch (err) {
+            toast('Failed to delete product: ' + err.message, 'error');
+        }
+    };
 
     // ============================================================
     //  EVENT LISTENERS
