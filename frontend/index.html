@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>NovaShop — Modern Sales & POS Dashboard</title>
+    <title>Smart Market — Modern Sales & POS Dashboard</title>
 
     <!-- Font Awesome 6 (free) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
@@ -262,17 +262,24 @@
             align-items: center;
             gap: 12px;
             font-weight: 800;
-            font-size: 1.8rem;
+            font-size: 1.85rem;
             color: var(--text-heading);
             margin-bottom: 8px;
             justify-content: center;
             letter-spacing: -0.02em;
         }
-        .login-card .logo i {
+        .logo-icon-box {
+            width: 42px;
+            height: 42px;
             background: linear-gradient(135deg, var(--primary), var(--accent-cyan));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            font-size: 2.1rem;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #ffffff;
+            font-size: 1.25rem;
+            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.4);
+            flex-shrink: 0;
         }
         .login-card .logo span {
             color: var(--primary);
@@ -385,15 +392,17 @@
         .logo {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
             font-weight: 800;
-            font-size: 1.4rem;
+            font-size: 1.45rem;
             color: var(--text-heading);
             letter-spacing: -0.02em;
         }
-        .logo i {
-            color: var(--primary);
-            font-size: 1.7rem;
+        .header .logo .logo-icon-box {
+            width: 36px;
+            height: 36px;
+            font-size: 1.05rem;
+            border-radius: 10px;
         }
         .logo span {
             color: var(--primary);
@@ -1102,8 +1111,8 @@
     <div class="login-page" id="loginPage">
         <div class="login-card">
             <div class="logo">
-                <i class="fas fa-store"></i>
-                Nova<span>Shop</span>
+                <div class="logo-icon-box"><i class="fas fa-bag-shopping"></i></div>
+                Smart<span>Market</span>
             </div>
             <div class="subtitle" id="authSubtitle">Sign in to manage your sales</div>
 
@@ -1212,8 +1221,8 @@
         <header class="header">
             <div class="container header-inner">
                 <div class="logo">
-                    <i class="fas fa-store"></i>
-                    Nova<span>Shop</span>
+                    <div class="logo-icon-box"><i class="fas fa-bag-shopping"></i></div>
+                    Smart<span>Market</span>
                 </div>
 
                 <nav class="nav-tabs" id="navTabs">
@@ -1351,9 +1360,9 @@
                 <!-- ABOUT VIEW -->
                 <section class="view" id="view-about">
                     <div class="about-content">
-                        <h2><i class="fas fa-store"></i> About NovaShop</h2>
+                        <h2><i class="fas fa-store"></i> About Smart Market</h2>
                         <p>
-                            NovaShop is a high-performance sales management & POS platform built with Amazon Cognito, AWS Serverless architecture, and DynamoDB.
+                            Smart Market is a high-performance sales management & POS platform built with Amazon Cognito, AWS Serverless architecture, and DynamoDB.
                         </p>
                         <div class="feature-grid">
                             <div class="feature-item">
@@ -1374,7 +1383,7 @@
                             </div>
                         </div>
                         <p style="margin-top:10px;font-size:0.85rem;color:var(--text-muted);">
-                            <i class="fas fa-shield-alt"></i> Amazon Cognito Secured Auth · &copy; 2026 NovaShop
+                            <i class="fas fa-shield-alt"></i> Amazon Cognito Secured Auth · &copy; 2026 Smart Market
                         </p>
                     </div>
                 </section>
