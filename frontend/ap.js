@@ -329,21 +329,23 @@
     const cognitoAuth = new CognitoAuthService(CognitoConfig);
 
     // ============================================================
-    //  STATE
+    //  STATE & DEFAULT PRODUCT IMAGES
     // ============================================================
+    const defaultPlaceholderImage = 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80';
+
     let products = [
-        { id: 1, name: 'Wireless Headphones', category: 'Electronics', price: 79.99, stock: 12, emoji: '🎧' },
-        { id: 2, name: 'Smart Watch', category: 'Electronics', price: 149.99, stock: 8, emoji: '⌚' },
-        { id: 3, name: 'Running Shoes', category: 'Clothing', price: 89.99, stock: 15, emoji: '👟' },
-        { id: 4, name: 'Hoodie', category: 'Clothing', price: 49.99, stock: 20, emoji: '🧥' },
-        { id: 5, name: 'Coffee Mug', category: 'Home', price: 12.99, stock: 30, emoji: '☕' },
-        { id: 6, name: 'Desk Lamp', category: 'Home', price: 34.99, stock: 10, emoji: '💡' },
-        { id: 7, name: 'Fiction Novel', category: 'Books', price: 19.99, stock: 25, emoji: '📚' },
-        { id: 8, name: 'Cookbook', category: 'Books', price: 24.99, stock: 18, emoji: '🍳' },
-        { id: 9, name: 'Action Figure', category: 'Toys', price: 29.99, stock: 7, emoji: '🤖' },
-        { id: 10, name: 'Puzzle Set', category: 'Toys', price: 15.99, stock: 14, emoji: '🧩' },
-        { id: 11, name: 'Bluetooth Speaker', category: 'Electronics', price: 59.99, stock: 9, emoji: '🔊' },
-        { id: 12, name: 'Backpack', category: 'Clothing', price: 39.99, stock: 11, emoji: '🎒' },
+        { id: 1, name: 'Wireless Headphones', category: 'Electronics', price: 79.99, stock: 12, image: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=400&q=80' },
+        { id: 2, name: 'Smart Watch', category: 'Electronics', price: 149.99, stock: 8, image: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=400&q=80' },
+        { id: 3, name: 'Running Shoes', category: 'Clothing', price: 89.99, stock: 15, image: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80' },
+        { id: 4, name: 'Hoodie', category: 'Clothing', price: 49.99, stock: 20, image: 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=400&q=80' },
+        { id: 5, name: 'Coffee Mug', category: 'Home', price: 12.99, stock: 30, image: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=400&q=80' },
+        { id: 6, name: 'Desk Lamp', category: 'Home', price: 34.99, stock: 10, image: 'https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=400&q=80' },
+        { id: 7, name: 'Fiction Novel', category: 'Books', price: 19.99, stock: 25, image: 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&q=80' },
+        { id: 8, name: 'Cookbook', category: 'Books', price: 24.99, stock: 18, image: 'https://images.unsplash.com/photo-1495521821757-a1efb6729352?w=400&q=80' },
+        { id: 9, name: 'Action Figure', category: 'Toys', price: 29.99, stock: 7, image: 'https://images.unsplash.com/photo-1608889825205-eebdb9fc5806?w=400&q=80' },
+        { id: 10, name: 'Puzzle Set', category: 'Toys', price: 15.99, stock: 14, image: 'https://images.unsplash.com/photo-1618842676088-c4d48a6a7c9d?w=400&q=80' },
+        { id: 11, name: 'Bluetooth Speaker', category: 'Electronics', price: 59.99, stock: 9, image: 'https://images.unsplash.com/photo-1545454675-3531b543be5d?w=400&q=80' },
+        { id: 12, name: 'Backpack', category: 'Clothing', price: 39.99, stock: 11, image: 'https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&q=80' },
     ];
     let cart = [];
     let orders = [];
@@ -404,7 +406,7 @@
     const prodIdInput = $('#prodIdInput');
     const prodNameInput = $('#prodNameInput');
     const prodCategoryInput = $('#prodCategoryInput');
-    const prodEmojiInput = $('#prodEmojiInput');
+    const prodImageInput = $('#prodImageInput');
     const prodPriceInput = $('#prodPriceInput');
     const prodStockInput = $('#prodStockInput');
     const productModalCancel = $('#productModalCancel');
@@ -754,7 +756,7 @@
         prodIdInput.value = '';
         prodNameInput.value = '';
         prodCategoryInput.value = 'Electronics';
-        prodEmojiInput.value = '📦';
+        prodImageInput.value = '';
         prodPriceInput.value = '';
         prodStockInput.value = '';
         productModalTitle.innerHTML = '<i class="fas fa-box" style="color:var(--primary);margin-right:10px;"></i> Add New Product';
@@ -767,7 +769,7 @@
         prodIdInput.value = product.id;
         prodNameInput.value = product.name;
         prodCategoryInput.value = product.category;
-        prodEmojiInput.value = product.emoji || '📦';
+        prodImageInput.value = product.image || '';
         prodPriceInput.value = product.price;
         prodStockInput.value = product.stock;
         productModalTitle.innerHTML = '<i class="fas fa-edit" style="color:var(--primary);margin-right:10px;"></i> Edit Product';
@@ -791,7 +793,7 @@
         const idVal = prodIdInput.value;
         const name = prodNameInput.value.trim();
         const category = prodCategoryInput.value;
-        const emoji = prodEmojiInput.value.trim() || '📦';
+        const image = prodImageInput.value.trim() || defaultPlaceholderImage;
         const price = parseFloat(prodPriceInput.value);
         const stock = parseInt(prodStockInput.value, 10);
 
@@ -807,7 +809,7 @@
             if (product) {
                 product.name = name;
                 product.category = category;
-                product.emoji = emoji;
+                product.image = image;
                 product.price = price;
                 product.stock = stock;
 
@@ -816,7 +818,7 @@
                 if (cartItem) {
                     cartItem.name = name;
                     cartItem.price = price;
-                    cartItem.emoji = emoji;
+                    cartItem.image = image;
                     if (cartItem.qty > stock) cartItem.qty = stock;
                 }
                 toast(`Updated product "${name}"`, 'success');
@@ -824,7 +826,7 @@
         } else {
             // Add new product
             const newId = products.length ? Math.max(...products.map(p => p.id)) + 1 : 1;
-            const newProduct = { id: newId, name, category, price, stock, emoji };
+            const newProduct = { id: newId, name, category, price, stock, image };
             products.push(newProduct);
             toast(`Product "${name}" added successfully!`, 'success');
         }
@@ -878,6 +880,7 @@
             const inCart = cart.find(c => c.id === p.id);
             const qtyInCart = inCart ? inCart.qty : 0;
             const lowStock = p.stock <= 3;
+            const imgUrl = p.image || defaultPlaceholderImage;
             return `
                 <div class="product-card">
                     <div class="card-header-actions">
@@ -888,7 +891,9 @@
                             <i class="fas fa-trash-alt"></i>
                         </button>
                     </div>
-                    <div class="emoji">${p.emoji}</div>
+                    <div class="product-img-wrap">
+                        <img src="${imgUrl}" alt="${p.name}" onerror="this.onerror=null;this.src='${defaultPlaceholderImage}';" />
+                    </div>
                     <div class="name">${p.name}</div>
                     <span class="category-pill">${p.category}</span>
                     <div class="price">$${p.price.toFixed(2)}</div>
@@ -988,9 +993,10 @@
         cart.forEach(item => {
             const total = item.price * item.qty;
             subtotal += total;
+            const imgUrl = item.image || defaultPlaceholderImage;
             html += `
                 <div class="cart-item">
-                    <div class="emoji">${item.emoji}</div>
+                    <img class="cart-item-img" src="${imgUrl}" alt="${item.name}" onerror="this.onerror=null;this.src='${defaultPlaceholderImage}';" />
                     <div class="info">
                         <div class="name">${item.name}</div>
                         <div class="price">$${item.price.toFixed(2)}</div>

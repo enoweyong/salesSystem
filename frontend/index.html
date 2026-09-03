@@ -734,10 +734,26 @@
             background: rgba(239, 68, 68, 0.15);
         }
 
-        .product-card .emoji {
-            font-size: 3rem;
-            margin-bottom: 12px;
-            display: inline-block;
+        .product-card .product-img-wrap {
+            width: 100%;
+            height: 160px;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            background: var(--bg-card);
+            margin-bottom: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--border-color);
+        }
+        .product-card .product-img-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: var(--transition);
+        }
+        .product-card:hover .product-img-wrap img {
+            transform: scale(1.05);
         }
         .product-card .name {
             font-weight: 700;
@@ -820,10 +836,13 @@
         .cart-item:last-child {
             border-bottom: none;
         }
-        .cart-item .emoji {
-            font-size: 2.2rem;
+        .cart-item .cart-item-img {
             width: 52px;
-            text-align: center;
+            height: 52px;
+            border-radius: var(--radius-sm);
+            object-fit: cover;
+            border: 1px solid var(--border-color);
+            background: var(--bg-card);
         }
         .cart-item .info {
             flex: 1;
@@ -1408,9 +1427,9 @@
                             <option value="Toys">Toys</option>
                         </select>
                     </div>
-                    <div class="form-group" style="width:110px;">
-                        <label for="prodEmojiInput">Emoji</label>
-                        <input type="text" id="prodEmojiInput" placeholder="📦" value="📦" required />
+                    <div class="form-group" style="flex:1.5;">
+                        <label for="prodImageInput">Image URL</label>
+                        <input type="url" id="prodImageInput" placeholder="https://images.unsplash.com/..." />
                     </div>
                 </div>
                 <div style="display:flex;gap:12px;">
