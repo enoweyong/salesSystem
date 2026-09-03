@@ -1,5 +1,5 @@
 /**
- * NovaShop – Sales System with Amazon Cognito Authentication
+ * Smart Market – Sales System with Amazon Cognito Authentication
  * Connects to Amazon Cognito User Pool & AWS API Gateway / Lambda backend.
  */
 
@@ -1178,5 +1178,5 @@
 
     window.addEventListener('beforeunload', saveData);
 
-    console.log('🛒 NovaShop loaded with Product Management, Dark/Light Theme & Modern Dashboard UI.');
+    console.log('🛒 Smart Market loaded with Product Management, Dark/Light Theme & Modern Dashboard UI.');
 })();
