@@ -52,12 +52,14 @@ test('awsClients: adaptDocumentClient maps kinds to SDK command classes', async 
 test('FakeDDB is consistent across put/get/update/delete cycles', async () => {
     const ddb = new FakeDDB();
     ddb.putItem('t', { productId: 'x', name: 'X', stock: 2 });
-    await ddb.send({ kind: 'Update', input: {
-        TableName: 't', Key: { productId: 'x' },
-        UpdateExpression: 'SET stock = stock - :q',
-        ConditionExpression: 'attribute_exists(productId) AND stock >= :q',
-        ExpressionAttributeValues: { ':q': 2 },
-    } });
+    await ddb.send({
+        kind: 'Update', input: {
+            TableName: 't', Key: { productId: 'x' },
+            UpdateExpression: 'SET stock = stock - :q',
+            ConditionExpression: 'attribute_exists(productId) AND stock >= :q',
+            ExpressionAttributeValues: { ':q': 2 },
+        }
+    });
     const after = await ddb.send({ kind: 'Get', input: { TableName: 't', Key: { productId: 'x' } } });
     assert.equal(after.Item.stock, 0);
 });

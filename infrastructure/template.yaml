@@ -39,18 +39,35 @@ Resources:
       UsernameAttributes: [email]
       AutoVerifiedAttributes: [email]
       MfaConfiguration: 'OFF'
+      AccountRecoverySetting:
+        RecoveryMechanisms:
+          - Name: verified_email
+            Priority: 1
       AdminCreateUserConfig:
-        AllowAdminCreateUserOnly: true   # no self sign-up; admin creates users
-        InviteMessageTemplate:
-          EmailMessage: 'Welcome to NovaShop! Your username is {username} and temporary password is {####}.'
-          EmailSubject: 'Your NovaShop account'
+        AllowAdminCreateUserOnly: false   # self sign-up enabled; users verify email
+        UnusedAccountValidityDays: 7
+      VerificationMessageTemplate:
+        DefaultEmailOption: CONFIRM_WITH_CODE
+        EmailMessage: 'Your NovaShop verification code is {####}.'
+        EmailSubject: 'Verify your NovaShop email'
       Policies:
         PasswordPolicy:
           MinimumLength: 8
-          RequireUppercase: false
-          RequireLowercase: false
-          RequireNumbers: false
-          RequireSymbols: false
+          RequireUppercase: true
+          RequireLowercase: true
+          RequireNumbers: true
+          RequireSymbols: true
+          TemporaryPasswordValidityDays: 7
+      Schema:
+        - Name: email
+          Required: true
+          Mutable: true
+        - Name: name
+          AttributeDataType: String
+          Mutable: true
+          Required: false
+      UserAttributeUpdateSettings:
+        AttributesRequireVerificationBeforeUpdate: [email]
 
   UserPoolDomain:
     Type: AWS::Cognito::UserPoolDomain

@@ -2,13 +2,13 @@
 
 Full-stack implementation of **CRUDL** (Create, Read, Update, Delete, List) backed by:
 
-| Concern          | AWS Service                                          |
-|------------------|------------------------------------------------------|
-| Security / Auth  | **Amazon Cognito** (User Pool, USER_PASSWORD_AUTH, JWT authorizer) |
-| API              | **Amazon API Gateway** (REST, Cognito authorizer, CORS) |
-| Compute          | **AWS Lambda** (Node.js 20)                          |
-| Data             | **Amazon DynamoDB** (Products + Orders tables, transactions) |
-| Files            | **Amazon S3** (private bucket, pre-signed PUT/GET URLs) |
+| Concern         | AWS Service                                                        |
+| --------------- | ------------------------------------------------------------------ |
+| Security / Auth | **Amazon Cognito** (User Pool, USER_PASSWORD_AUTH, JWT authorizer) |
+| API             | **Amazon API Gateway** (REST, Cognito authorizer, CORS)            |
+| Compute         | **AWS Lambda** (Node.js 20)                                        |
+| Data            | **Amazon DynamoDB** (Products + Orders tables, transactions)       |
+| Files           | **Amazon S3** (private bucket, pre-signed PUT/GET URLs)            |
 
 The frontend (`frontend/`) is vanilla JS — when `frontend/config.js` is empty it runs
 as a local demo; once filled it talks to the real AWS stack.
@@ -46,16 +46,16 @@ as a local demo; once filled it talks to the real AWS stack.
 
 ## CRUDL surface
 
-| Operation | Endpoint                  | Lambda            | Notes |
-|-----------|---------------------------|-------------------|-------|
-| **C**reate | `POST /products`         | `products.handler`| Validates & whitelists fields |
-| **R**ead   | `GET /products/{id}`     | `products.handler`| Returns pre-signed image URL |
-| **U**pdate | `PUT /products/{id}`     | `products.handler`| Partial-safe field update |
-| **D**elete | `DELETE /products/{id}`  | `products.handler`| Also removes the S3 image object |
-| **L**ist   | `GET /products`          | `products.handler`| Optional `?category=` filter |
-| Create     | `POST /orders`           | `orders.handler`  | Server-side pricing + atomic stock decrement (TransactWriteItems) |
-| List       | `GET /orders`            | `orders.handler`  | Per-user via GSI `user-createdAt-index` |
-| Upload     | `POST /images/presign`   | `presign.handler` | Pre-signed S3 PUT (PNG/JPEG/WEBP/GIF) |
+| Operation  | Endpoint                | Lambda             | Notes                                                             |
+| ---------- | ----------------------- | ------------------ | ----------------------------------------------------------------- |
+| **C**reate | `POST /products`        | `products.handler` | Validates & whitelists fields                                     |
+| **R**ead   | `GET /products/{id}`    | `products.handler` | Returns pre-signed image URL                                      |
+| **U**pdate | `PUT /products/{id}`    | `products.handler` | Partial-safe field update                                         |
+| **D**elete | `DELETE /products/{id}` | `products.handler` | Also removes the S3 image object                                  |
+| **L**ist   | `GET /products`         | `products.handler` | Optional `?category=` filter                                      |
+| Create     | `POST /orders`          | `orders.handler`   | Server-side pricing + atomic stock decrement (TransactWriteItems) |
+| List       | `GET /orders`           | `orders.handler`   | Per-user via GSI `user-createdAt-index`                           |
+| Upload     | `POST /images/presign`  | `presign.handler`  | Pre-signed S3 PUT (PNG/JPEG/WEBP/GIF)                             |
 
 All endpoints require a valid Cognito ID token (`Authorization: Bearer <jwt>`).
 

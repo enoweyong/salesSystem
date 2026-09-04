@@ -36,10 +36,66 @@
 
     const loginPage = $('#loginPage');
     const app = $('#app');
+
+    // Auth panels
+    const loginPanel = $('#loginPanel');
+    const signupPanel = $('#signupPanel');
+    const verifyPanel = $('#verifyPanel');
+    const forgotPanel = $('#forgotPanel');
+    const resetPanel = $('#resetPanel');
+    const changePasswordPanel = $('#changePasswordPanel');
+
+    // Login form
     const loginForm = $('#loginForm');
     const usernameInput = $('#usernameInput');
     const passwordInput = $('#passwordInput');
     const loginError = $('#loginError');
+    const showSignupLink = $('#showSignupLink');
+    const showForgotLink = $('#showForgotLink');
+
+    // Signup form
+    const signupForm = $('#signupForm');
+    const signupNameInput = $('#signupNameInput');
+    const signupEmailInput = $('#signupEmailInput');
+    const signupPasswordInput = $('#signupPasswordInput');
+    const signupConfirmInput = $('#signupConfirmInput');
+    const signupError = $('#signupError');
+    const backToLoginFromSignup = $('#backToLoginFromSignup');
+
+    // Verify email form
+    const verifyForm = $('#verifyForm');
+    const verifyEmailInput = $('#verifyEmailInput');
+    const verifyCodeInput = $('#verifyCodeInput');
+    const verifyError = $('#verifyError');
+    const resendCodeBtn = $('#resendCodeBtn');
+    const backToLoginFromVerify = $('#backToLoginFromVerify');
+    let pendingVerificationEmail = '';
+
+    // Forgot password (request code)
+    const forgotForm = $('#forgotForm');
+    const forgotEmailInput = $('#forgotEmailInput');
+    const forgotError = $('#forgotError');
+    const backToLoginFromForgot = $('#backToLoginFromForgot');
+
+    // Reset password (enter code + new password)
+    const resetForm = $('#resetForm');
+    const resetEmailInput = $('#resetEmailInput');
+    const resetCodeInput = $('#resetCodeInput');
+    const resetPasswordInput = $('#resetPasswordInput');
+    const resetConfirmInput = $('#resetConfirmInput');
+    const resetError = $('#resetError');
+    const backToLoginFromReset = $('#backToLoginFromReset');
+    let pendingResetEmail = '';
+
+    // Forced password change (NEW_PASSWORD_REQUIRED)
+    const changePasswordForm = $('#changePasswordForm');
+    const changePasswordUserInput = $('#changePasswordUserInput');
+    const newPasswordInput = $('#newPasswordInput');
+    const newPasswordConfirmInput = $('#newPasswordConfirmInput');
+    const changePasswordError = $('#changePasswordError');
+    const signOutFromChangePassword = $('#signOutFromChangePassword');
+    let pendingAuthResult = null;   // challenge session from login
+    let pendingChallengeUsername = '';
 
     const navTabs = $$('.nav-tab');
     const views = {
@@ -104,9 +160,10 @@
     function toast(message, type = 'info', duration = 3000) {
         const el = document.createElement('div');
         el.className = `toast ${type}`;
+        el.style.setProperty('--toast-duration', duration + 'ms');
         const icons = { success: 'fa-check-circle', error: 'fa-exclamation-circle', info: 'fa-info-circle' };
         el.innerHTML = `
-            <i class="fas ${icons[type] || icons.info}"></i>
+            <span class="toast-icon"><i class="fas ${icons[type] || icons.info}"></i></span>
             <span>${message}</span>
             <span class="toast-close">&times;</span>
         `;
@@ -230,6 +287,15 @@
                 ClientId: COGNITO_CLIENT_ID,
                 AuthParameters: { USERNAME: username, PASSWORD: password },
             });
+            if (result.ChallengeName === 'NEW_PASSWORD_REQUIRED') {
+                // Force the user to set a new password before entering the app.
+                pendingAuthResult = result;
+                pendingChallengeUsername = username;
+                showChangePassword();
+                loginError.textContent = '';
+                toast('You must set a new password before continuing.', 'info');
+                return false;
+            }
             adoptSession(result);
             saveData();
             showApp();
@@ -250,9 +316,121 @@
         authToken = null;
         refreshToken = null;
         tokenExpiresAt = 0;
+        pendingAuthResult = null;
+        pendingChallengeUsername = '';
         saveData();
         showLogin();
         toast('Signed out.', 'info');
+    }
+
+    // ============================================================
+    //  AUTH PANEL SWITCHING (multi-step Cognito flows)
+    // ============================================================
+    function showPanel(panel) {
+        const panels = [loginPanel, signupPanel, verifyPanel, forgotPanel, resetPanel, changePasswordPanel];
+        panels.forEach(p => { if (p) p.classList.toggle('active', p === panel); });
+    }
+
+    function showLogin() {
+        loginPage.style.display = 'flex';
+        app.classList.remove('active');
+        showPanel(loginPanel);
+        loginError.textContent = '';
+    }
+
+    function showSignup() {
+        loginPage.style.display = 'flex';
+        app.classList.remove('active');
+        signupError.textContent = '';
+        showPanel(signupPanel);
+    }
+
+    function showVerify(email) {
+        pendingVerificationEmail = email || pendingVerificationEmail;
+        if (verifyEmailInput) verifyEmailInput.value = pendingVerificationEmail;
+        verifyError.textContent = '';
+        showPanel(verifyPanel);
+    }
+
+    function showForgot() {
+        forgotError.textContent = '';
+        showPanel(forgotPanel);
+    }
+
+    function showReset(email) {
+        pendingResetEmail = email || pendingResetEmail;
+        if (resetEmailInput) resetEmailInput.value = pendingResetEmail;
+        resetError.textContent = '';
+        showPanel(resetPanel);
+    }
+
+    function showChangePassword() {
+        if (changePasswordUserInput) {
+            changePasswordUserInput.value = pendingChallengeUsername || pendingVerificationEmail || '';
+        }
+        changePasswordError.textContent = '';
+        showPanel(changePasswordPanel);
+    }
+
+    // ============================================================
+    //  COGNITO OPERATIONS — Signup / Verify / Forgot Password / Reset
+    // ============================================================
+    async function signup(name, email, password) {
+        return cognitoCall('SignUp', {
+            ClientId: COGNITO_CLIENT_ID,
+            Username: email,
+            Password: password,
+            UserAttributes: [
+                { Name: 'email', Value: email },
+                { Name: 'name', Value: name },
+            ],
+        });
+    }
+
+    async function confirmSignup(email, code) {
+        return cognitoCall('ConfirmSignUp', {
+            ClientId: COGNITO_CLIENT_ID,
+            Username: email,
+            ConfirmationCode: code,
+        });
+    }
+
+    async function resendConfirmationCode(email) {
+        return cognitoCall('ResendConfirmationCode', {
+            ClientId: COGNITO_CLIENT_ID,
+            Username: email,
+        });
+    }
+
+    async function forgotPassword(email) {
+        return cognitoCall('ForgotPassword', {
+            ClientId: COGNITO_CLIENT_ID,
+            Username: email,
+        });
+    }
+
+    async function confirmForgotPassword(email, code, newPassword) {
+        return cognitoCall('ConfirmForgotPassword', {
+            ClientId: COGNITO_CLIENT_ID,
+            Username: email,
+            ConfirmationCode: code,
+            Password: newPassword,
+        });
+    }
+
+    async function respondToNewPasswordChallenge(newPassword) {
+        if (!pendingAuthResult || !pendingAuthResult.Session) {
+            throw new Error('Your session expired. Please sign in again.');
+        }
+        return cognitoCall('RespondToAuthChallenge', {
+            ClientId: COGNITO_CLIENT_ID,
+            ChallengeName: 'NEW_PASSWORD_REQUIRED',
+            Session: pendingAuthResult.Session,
+            ChallengeResponses: {
+                USERNAME: pendingChallengeUsername,
+                NEW_PASSWORD: newPassword,
+            },
+        });
     }
 
     // ============================================================
@@ -267,11 +445,6 @@
         loadOrders();
         renderCart(); // cart is local
         switchView('dashboard');
-    }
-
-    function showLogin() {
-        loginPage.style.display = 'flex';
-        app.classList.remove('active');
     }
 
     // ============================================================
@@ -327,39 +500,47 @@
             const qtyInCart = inCart ? inCart.qty : 0;
             const lowStock = p.stock <= 3;
             const priceNum = Number(p.price);
+            const stockClass = lowStock ? 'low' : '';
+            const stockLabel = p.stock <= 0 ? 'Out of stock' : `${p.stock} in stock`;
             const visual = p.imageUrl
                 ? `<img class="product-img" src="${p.imageUrl}" alt="${p.name}" onerror="this.style.display='none'">`
                 : `<div class="emoji">${p.emoji}</div>`;
-            const safeName = String(p.name).replace(/"/g, '&quot;').replace(/'/g, "\\'");
+            const safeName = String(p.name).replace(/"/g, '"').replace(/'/g, "\\'");
             return `
                 <div class="product-card">
-                    ${visual}
-                    <div class="name">${p.name}</div>
-                    <div class="category">${p.category}</div>
-                    <div class="price">$${priceNum.toFixed(2)}</div>
-                    <div class="stock ${lowStock ? 'low' : ''}">${p.stock} in stock</div>
-                    <div class="actions">
-                        ${qtyInCart > 0 ? `
-                            <button class="btn btn-outline btn-sm" onclick="updateCartQty('${p.id}', -1)" ${p.stock <= 0 ? 'disabled' : ''}>
-                                <i class="fas fa-minus"></i>
-                            </button>
-                            <span style="font-weight:600;padding:0 4px;min-width:24px;text-align:center;">${qtyInCart}</span>
-                            <button class="btn btn-outline btn-sm" onclick="updateCartQty('${p.id}', 1)" ${p.stock <= qtyInCart ? 'disabled' : ''}>
-                                <i class="fas fa-plus"></i>
-                            </button>
-                        ` : `
-                            <button class="btn btn-primary btn-sm" onclick="addToCart('${p.id}')" ${p.stock <= 0 ? 'disabled' : ''}>
-                                <i class="fas fa-cart-plus"></i> Add
-                            </button>
-                        `}
+                    <div class="product-media">
+                        ${visual}
                     </div>
-                    <div class="actions manage-actions">
-                        <button class="btn btn-outline btn-sm" onclick="editProduct('${p.id}')">
-                            <i class="fas fa-edit"></i> Edit
-                        </button>
-                        <button class="btn btn-danger btn-sm" onclick="requestDeleteProduct('${p.id}', '${safeName}')">
-                            <i class="fas fa-trash-alt"></i> Delete
-                        </button>
+                    <div class="product-body">
+                        <div class="product-top">
+                            <div class="name">${p.name}</div>
+                            <span class="category-chip">${p.category}</span>
+                        </div>
+                        <div class="price">$${priceNum.toFixed(2)}</div>
+                        <div class="stock ${stockClass}"><span class="stock-dot"></span>${stockLabel}</div>
+                        <div class="actions">
+                            ${qtyInCart > 0 ? `
+                                <button class="btn btn-outline btn-sm" onclick="updateCartQty('${p.id}', -1)" ${p.stock <= 0 ? 'disabled' : ''}>
+                                    <i class="fas fa-minus"></i>
+                                </button>
+                                <span style="font-weight:600;padding:0 4px;min-width:24px;text-align:center;">${qtyInCart}</span>
+                                <button class="btn btn-outline btn-sm" onclick="updateCartQty('${p.id}', 1)" ${p.stock <= qtyInCart ? 'disabled' : ''}>
+                                    <i class="fas fa-plus"></i>
+                                </button>
+                            ` : `
+                                <button class="btn btn-primary btn-sm" onclick="addToCart('${p.id}')" ${p.stock <= 0 ? 'disabled' : ''}>
+                                    <i class="fas fa-cart-plus"></i> Add
+                                </button>
+                            `}
+                        </div>
+                        <div class="actions manage-actions">
+                            <button class="btn btn-outline btn-sm" onclick="editProduct('${p.id}')">
+                                <i class="fas fa-edit"></i> Edit
+                            </button>
+                            <button class="btn btn-danger btn-sm" onclick="requestDeleteProduct('${p.id}', '${safeName}')">
+                                <i class="fas fa-trash-alt"></i> Delete
+                            </button>
+                        </div>
                     </div>
                 </div>
             `;
@@ -558,7 +739,7 @@
         if (!cart.length) {
             cartItems.innerHTML = `
                 <div class="empty">
-                    <i class="fas fa-shopping-cart"></i>
+                    <div class="empty-icon"><i class="fas fa-shopping-cart"></i></div>
                     <p>Your cart is empty.</p>
                     <button class="btn btn-primary btn-sm mt-12" onclick="switchView('products')">
                         <i class="fas fa-arrow-left"></i> Browse Products
@@ -579,20 +760,20 @@
             subtotal += total;
             html += `
                 <div class="cart-item">
-                    <div class="emoji">${item.emoji}</div>
+                    <div class="item-media"><div class="emoji">${item.emoji}</div></div>
                     <div class="info">
                         <div class="name">${item.name}</div>
                         <div class="price">$${Number(item.price).toFixed(2)}</div>
                     </div>
                     <div class="qty-control">
-                        <button onclick="updateCartQty('${item.id}', -1)"><i class="fas fa-minus"></i></button>
+                        <button onclick="updateCartQty('${item.id}', -1)" aria-label="Decrease quantity"><i class="fas fa-minus"></i></button>
                         <span>${item.qty}</span>
-                        <button onclick="updateCartQty('${item.id}', 1)" ${item.qty >= (products.find(p=>p.id===item.id)?.stock || 0) ? 'disabled' : ''}>
+                        <button onclick="updateCartQty('${item.id}', 1)" ${item.qty >= (products.find(p=>p.id===item.id)?.stock || 0) ? 'disabled' : ''} aria-label="Increase quantity">
                             <i class="fas fa-plus"></i>
                         </button>
                     </div>
                     <div class="item-total">$${total.toFixed(2)}</div>
-                    <button class="remove-btn" onclick="updateCartQty('${item.id}', -${item.qty})"><i class="fas fa-trash-alt"></i></button>
+                    <button class="remove-btn" onclick="updateCartQty('${item.id}', -${item.qty})" aria-label="Remove item"><i class="fas fa-trash-alt"></i></button>
                 </div>
             `;
         });
@@ -677,7 +858,7 @@
         if (!orders.length) {
             ordersList.innerHTML = `
                 <div class="empty">
-                    <i class="fas fa-receipt" style="font-size:2.4rem;display:block;margin-bottom:12px;color:var(--gray-300);"></i>
+                    <div class="empty-icon"><i class="fas fa-receipt"></i></div>
                     <p>No orders placed yet.</p>
                 </div>
             `;
@@ -751,6 +932,165 @@
         }
         login(username, password);
     });
+
+    // Auth panel navigation links
+    if (showSignupLink) showSignupLink.addEventListener('click', (e) => { e.preventDefault(); showSignup(); });
+    if (showForgotLink) showForgotLink.addEventListener('click', (e) => { e.preventDefault(); showForgot(); });
+    if (backToLoginFromSignup) backToLoginFromSignup.addEventListener('click', showLogin);
+    if (backToLoginFromVerify) backToLoginFromVerify.addEventListener('click', showLogin);
+    if (backToLoginFromForgot) backToLoginFromForgot.addEventListener('click', showLogin);
+    if (backToLoginFromReset) backToLoginFromReset.addEventListener('click', showLogin);
+    if (signOutFromChangePassword) signOutFromChangePassword.addEventListener('click', () => {
+        pendingAuthResult = null;
+        pendingChallengeUsername = '';
+        showLogin();
+    });
+
+    // Signup form
+    if (signupForm) {
+        signupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            signupError.textContent = '';
+            const name = signupNameInput.value.trim();
+            const email = signupEmailInput.value.trim();
+            const password = signupPasswordInput.value;
+            const confirm = signupConfirmInput.value;
+            if (!name || !email || !password || !confirm) {
+                signupError.textContent = 'Please fill in all fields.';
+                return;
+            }
+            if (password !== confirm) {
+                signupError.textContent = 'Passwords do not match.';
+                return;
+            }
+            if (password.length < 8) {
+                signupError.textContent = 'Password must be at least 8 characters with upper, lower, number and symbol.';
+                return;
+            }
+            try {
+                await signup(name, email, password);
+                pendingVerificationEmail = email;
+                showVerify(email);
+                toast('Account created! Check your email for the verification code.', 'success', 5000);
+            } catch (err) {
+                signupError.textContent = err.message || 'Signup failed';
+            }
+        });
+    }
+
+    // Verify email form
+    if (verifyForm) {
+        verifyForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            verifyError.textContent = '';
+            const email = verifyEmailInput.value.trim() || pendingVerificationEmail;
+            const code = verifyCodeInput.value.trim();
+            if (!email || !code) {
+                verifyError.textContent = 'Please enter the verification code.';
+                return;
+            }
+            try {
+                await confirmSignup(email, code);
+                toast('Email verified! You can now sign in.', 'success');
+                usernameInput.value = email;
+                passwordInput.value = '';
+                showLogin();
+            } catch (err) {
+                verifyError.textContent = err.message || 'Verification failed';
+            }
+        });
+    }
+
+    // Resend confirmation code
+    if (resendCodeBtn) {
+        resendCodeBtn.addEventListener('click', async () => {
+            const email = verifyEmailInput.value.trim() || pendingVerificationEmail;
+            if (!email) { verifyError.textContent = 'Please enter your email first.'; return; }
+            try {
+                await resendConfirmationCode(email);
+                verifyError.textContent = '';
+                toast('Verification code resent. Check your email.', 'success');
+            } catch (err) {
+                verifyError.textContent = err.message || 'Failed to resend code';
+            }
+        });
+    }
+
+    // Forgot password (request code) form
+    if (forgotForm) {
+        forgotForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            forgotError.textContent = '';
+            const email = forgotEmailInput.value.trim();
+            if (!email) { forgotError.textContent = 'Please enter your email.'; return; }
+            try {
+                await forgotPassword(email);
+                pendingResetEmail = email;
+                showReset(email);
+                toast('Password reset code sent! Check your email.', 'success', 5000);
+            } catch (err) {
+                forgotError.textContent = err.message || 'Failed to request reset';
+            }
+        });
+    }
+
+    // Reset password (code + new password) form
+    if (resetForm) {
+        resetForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            resetError.textContent = '';
+            const email = resetEmailInput.value.trim() || pendingResetEmail;
+            const code = resetCodeInput.value.trim();
+            const newPassword = resetPasswordInput.value;
+            const confirm = resetConfirmInput.value;
+            if (!email || !code || !newPassword || !confirm) {
+                resetError.textContent = 'Please fill in all fields.';
+                return;
+            }
+            if (newPassword !== confirm) {
+                resetError.textContent = 'Passwords do not match.';
+                return;
+            }
+            try {
+                await confirmForgotPassword(email, code, newPassword);
+                toast('Password reset! You can now sign in with your new password.', 'success', 5000);
+                usernameInput.value = email;
+                passwordInput.value = '';
+                showLogin();
+            } catch (err) {
+                resetError.textContent = err.message || 'Password reset failed';
+            }
+        });
+    }
+
+    // Forced password change (NEW_PASSWORD_REQUIRED) form
+    if (changePasswordForm) {
+        changePasswordForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            changePasswordError.textContent = '';
+            const newPassword = newPasswordInput.value;
+            const confirm = newPasswordConfirmInput.value;
+            if (!newPassword || !confirm) {
+                changePasswordError.textContent = 'Please fill in both fields.';
+                return;
+            }
+            if (newPassword !== confirm) {
+                changePasswordError.textContent = 'Passwords do not match.';
+                return;
+            }
+            try {
+                const result = await respondToNewPasswordChallenge(newPassword);
+                pendingAuthResult = null;
+                pendingChallengeUsername = '';
+                adoptSession(result);
+                saveData();
+                showApp();
+                toast('Password updated successfully. Welcome!', 'success');
+            } catch (err) {
+                changePasswordError.textContent = err.message || 'Failed to update password';
+            }
+        });
+    }
 
     // Sign out
     signOutBtn.addEventListener('click', logout);
