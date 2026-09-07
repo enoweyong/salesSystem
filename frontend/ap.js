@@ -572,36 +572,78 @@
     // ============================================================
     //  GOOGLE AUTHENTICATION METHOD
     // ============================================================
+    function handleGoogleCredentialResponse(response) {
+        if (response && response.credential) {
+            const payload = parseJwt(response.credential);
+            const name = payload && payload.name ? payload.name : (payload && payload.email ? payload.email.split('@')[0] : 'Google User');
+            const email = payload && payload.email ? payload.email : 'google.user@gmail.com';
+            currentUser = {
+                username: name,
+                email: email,
+                token: response.credential,
+                authMethod: 'Google Identity Services'
+            };
+            saveData();
+            showApp();
+            loginError.textContent = '';
+            toast(`Signed in with Google! Welcome, ${currentUser.username}`, 'success');
+        }
+    }
+
+    function initGoogleIdentityServices() {
+        if (window.google && window.google.accounts && window.google.accounts.id) {
+            try {
+                window.google.accounts.id.initialize({
+                    client_id: GoogleConfig.client_id,
+                    callback: handleGoogleCredentialResponse,
+                    auto_select: false
+                });
+            } catch (_) {}
+        }
+    }
+
+    window.addEventListener('load', initGoogleIdentityServices);
+
     async function signInWithGoogle() {
         try {
             loginError.textContent = 'Initiating Google Authentication...';
 
-            // Build Google OAuth / Cognito identity provider link
-            const redirectUri = window.location.href.split('#')[0].split('?')[0];
-            const googleAuthUrl = `${GoogleConfig.auth_uri}?client_id=${encodeURIComponent(GoogleConfig.client_id)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=email%20profile%20openid`;
-
-            // If running on live domain or Cognito hosted UI
-            if (window.location.hostname !== 'localhost' && window.location.protocol !== 'file:') {
-                const cognitoGoogleUrl = `${GoogleConfig.cognitoDomain}/oauth2/authorize?identity_provider=Google&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&client_id=${CognitoConfig.clientId}`;
-                window.location.href = cognitoGoogleUrl;
+            if (window.google && window.google.accounts && window.google.accounts.id) {
+                initGoogleIdentityServices();
+                window.google.accounts.id.prompt((notification) => {
+                    if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+                        if (GoogleConfig.cognitoDomain && window.location.protocol !== 'file:') {
+                            const redirectUri = GoogleConfig.javascript_origins[0];
+                            const cognitoGoogleUrl = `${GoogleConfig.cognitoDomain}/oauth2/authorize?identity_provider=Google&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&client_id=${CognitoConfig.clientId}`;
+                            window.location.href = cognitoGoogleUrl;
+                        }
+                    }
+                });
+                loginError.textContent = '';
                 return;
             }
 
-            // Local / Offline mode fallback for development & verification:
-            // Simulate successful Google Authentication token receipt
-            const googleUser = {
-                username: 'Google User',
-                email: 'google.user@gmail.com',
-                token: `google-oauth-token-${Date.now()}`,
-                authMethod: 'Google OAuth 2.0',
-                googleClientId: GoogleConfig.client_id
-            };
+            if (window.location.protocol === 'file:' || window.location.hostname === 'localhost') {
+                const googleUser = {
+                    username: 'Google User',
+                    email: 'google.user@gmail.com',
+                    token: `google-oauth-token-${Date.now()}`,
+                    authMethod: 'Google OAuth 2.0',
+                    googleClientId: GoogleConfig.client_id
+                };
+                currentUser = googleUser;
+                saveData();
+                showApp();
+                loginError.textContent = '';
+                toast(`Successfully signed in with Google! Welcome, ${currentUser.username}`, 'success');
+                return;
+            }
 
-            currentUser = googleUser;
-            saveData();
-            showApp();
-            loginError.textContent = '';
-            toast(`Successfully signed in with Google! Welcome, ${currentUser.username}`, 'success');
+            if (GoogleConfig.cognitoDomain) {
+                const redirectUri = GoogleConfig.javascript_origins[0];
+                const cognitoGoogleUrl = `${GoogleConfig.cognitoDomain}/oauth2/authorize?identity_provider=Google&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&client_id=${CognitoConfig.clientId}`;
+                window.location.href = cognitoGoogleUrl;
+            }
         } catch (err) {
             loginError.textContent = err.message || 'Google authentication failed.';
         }
@@ -611,21 +653,49 @@
         googleSignInBtn.addEventListener('click', signInWithGoogle);
     }
 
+    // Parse JWT Payload from Google ID Token
+    function parseJwt(token) {
+        try {
+            const base64Url = token.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const jsonPayload = decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join(''));
+            return JSON.parse(jsonPayload);
+        } catch (_) {
+            return null;
+        }
+    }
+
     // Handle OAuth Callback Tokens if present in URL hash or search
     function handleOAuthCallback() {
         const hash = window.location.hash || window.location.search;
         if (hash.includes('access_token') || hash.includes('id_token') || hash.includes('code=')) {
             const params = new URLSearchParams(hash.replace('#', '?'));
-            const accessToken = params.get('access_token') || params.get('id_token') || params.get('code');
+            const idToken = params.get('id_token');
+            const accessToken = params.get('access_token') || idToken || params.get('code');
+
+            let username = 'Google User';
+            let email = 'google.user@gmail.com';
+
+            if (idToken) {
+                const payload = parseJwt(idToken);
+                if (payload) {
+                    if (payload.name) username = payload.name;
+                    else if (payload.email) username = payload.email.split('@')[0];
+                    if (payload.email) email = payload.email;
+                }
+            }
+
             if (accessToken) {
                 currentUser = {
-                    username: 'Google User',
-                    email: 'google.user@gmail.com',
+                    username: username,
+                    email: email,
                     token: accessToken,
                     authMethod: 'Google OAuth 2.0'
                 };
                 saveData();
                 window.history.replaceState(null, null, window.location.pathname);
+                showApp();
+                toast(`Welcome, ${currentUser.username}!`, 'success');
             }
         }
     }
