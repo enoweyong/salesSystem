@@ -511,7 +511,15 @@
                 if (parsed.products) {
                     products = parsed.products;
                 }
-                if (parsed.currentUser) currentUser = parsed.currentUser;
+                if (parsed.currentUser) {
+                    currentUser = parsed.currentUser;
+                    if (currentUser.username === 'Google User') {
+                        currentUser.username = currentUser.email && currentUser.email !== 'google.user@gmail.com' ? currentUser.email.split('@')[0] : 'Demo User';
+                    }
+                    if (currentUser.email === 'google.user@gmail.com') {
+                        currentUser.email = 'user@example.com';
+                    }
+                }
             }
         } catch (_) { /* ignore */ }
     }
@@ -590,8 +598,8 @@
     function handleGoogleCredentialResponse(response) {
         if (response && response.credential) {
             const payload = parseJwt(response.credential);
-            const name = payload && payload.name ? payload.name : (payload && payload.email ? payload.email.split('@')[0] : 'Google User');
-            const email = payload && payload.email ? payload.email : 'google.user@gmail.com';
+            const name = payload && payload.name ? payload.name : (payload && payload.email ? payload.email.split('@')[0] : 'User');
+            const email = payload && payload.email ? payload.email : 'user@example.com';
             currentUser = {
                 username: name,
                 email: email,
@@ -635,15 +643,15 @@
                 // sign in with local Google mock profile
                 if (!CognitoConfig.useLiveCognito) {
                     currentUser = {
-                        username: 'Google User',
-                        email: 'google.user@gmail.com',
+                        username: 'Demo User',
+                        email: 'user@example.com',
                         token: `mock-google-token-${Date.now()}`,
                         authMethod: 'Google Local Authentication'
                     };
                     saveData();
                     showApp();
                     loginError.textContent = '';
-                    toast('Signed in with Google (Local Auth)! Welcome, Google User', 'success');
+                    toast('Signed in with Google (Local Auth)! Welcome, Demo User', 'success');
                     return;
                 }
 
@@ -655,15 +663,15 @@
             // Local / Demo Mode handling
             if (!CognitoConfig.useLiveCognito) {
                 currentUser = {
-                    username: 'Google User',
-                    email: 'google.user@gmail.com',
+                    username: 'Demo User',
+                    email: 'user@example.com',
                     token: `mock-google-token-${Date.now()}`,
                     authMethod: 'Google Local Authentication'
                 };
                 saveData();
                 showApp();
                 loginError.textContent = '';
-                toast('Signed in with Google! Welcome, Google User', 'success');
+                toast('Signed in with Google! Welcome, Demo User', 'success');
                 return;
             }
 
@@ -715,8 +723,8 @@
             const idToken = params.get('id_token');
             const accessToken = params.get('access_token') || idToken || params.get('code');
 
-            let username = 'Google User';
-            let email = 'google.user@gmail.com';
+            let username = 'User';
+            let email = 'user@example.com';
 
             if (idToken) {
                 const payload = parseJwt(idToken);
