@@ -605,14 +605,17 @@
         }
     }
 
+    let isGisInitialized = false;
+
     function initGoogleIdentityServices() {
-        if (window.google && window.google.accounts && window.google.accounts.id) {
+        if (!isGisInitialized && window.google && window.google.accounts && window.google.accounts.id) {
             try {
                 window.google.accounts.id.initialize({
                     client_id: GoogleConfig.client_id,
                     callback: handleGoogleCredentialResponse,
                     auto_select: false
                 });
+                isGisInitialized = true;
             } catch (_) {}
         }
     }
