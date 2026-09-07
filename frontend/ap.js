@@ -608,44 +608,27 @@
         try {
             loginError.textContent = 'Initiating Google Authentication...';
 
+            // If GIS loaded, prompt Google One Tap / Sign-In popup
             if (window.google && window.google.accounts && window.google.accounts.id) {
                 initGoogleIdentityServices();
                 window.google.accounts.id.prompt((notification) => {
                     if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-                        if (GoogleConfig.cognitoDomain && window.location.protocol !== 'file:') {
-                            const redirectUri = GoogleConfig.javascript_origins[0];
-                            const cognitoGoogleUrl = `${GoogleConfig.cognitoDomain}/oauth2/authorize?identity_provider=Google&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&client_id=${CognitoConfig.clientId}`;
-                            window.location.href = cognitoGoogleUrl;
-                        }
+                        // Redirect to Cognito Hosted UI for Google Identity Provider
+                        const redirectUri = window.location.href.split('#')[0].split('?')[0];
+                        const cognitoGoogleUrl = `${GoogleConfig.cognitoDomain}/oauth2/authorize?identity_provider=Google&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&client_id=${CognitoConfig.clientId}`;
+                        window.location.href = cognitoGoogleUrl;
                     }
                 });
                 loginError.textContent = '';
                 return;
             }
 
-            if (window.location.protocol === 'file:' || window.location.hostname === 'localhost') {
-                const googleUser = {
-                    username: 'Google User',
-                    email: 'google.user@gmail.com',
-                    token: `google-oauth-token-${Date.now()}`,
-                    authMethod: 'Google OAuth 2.0',
-                    googleClientId: GoogleConfig.client_id
-                };
-                currentUser = googleUser;
-                saveData();
-                showApp();
-                loginError.textContent = '';
-                toast(`Successfully signed in with Google! Welcome, ${currentUser.username}`, 'success');
-                return;
-            }
-
-            if (GoogleConfig.cognitoDomain) {
-                const redirectUri = GoogleConfig.javascript_origins[0];
-                const cognitoGoogleUrl = `${GoogleConfig.cognitoDomain}/oauth2/authorize?identity_provider=Google&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&client_id=${CognitoConfig.clientId}`;
-                window.location.href = cognitoGoogleUrl;
-            }
+            // Redirect via Cognito Hosted UI
+            const redirectUri = window.location.href.split('#')[0].split('?')[0];
+            const cognitoGoogleUrl = `${GoogleConfig.cognitoDomain}/oauth2/authorize?identity_provider=Google&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&client_id=${CognitoConfig.clientId}`;
+            window.location.href = cognitoGoogleUrl;
         } catch (err) {
-            loginError.textContent = err.message || 'Google authentication failed.';
+            loginError.textContent = err.message || 'Google authentication error.';
         }
     }
 
