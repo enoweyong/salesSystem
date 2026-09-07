@@ -620,19 +620,54 @@
         }
     }
 
-    window.addEventListener('load', initGoogleIdentityServices);
+    window.addEventListener('load', () => {
+        if (CognitoConfig.useLiveCognito) {
+            initGoogleIdentityServices();
+        }
+    });
 
     async function signInWithGoogle() {
         try {
             loginError.textContent = 'Initiating Google Authentication...';
 
             if (window.location.protocol === 'file:') {
+                // In local file mode or local preview without live AWS Cognito deployment,
+                // sign in with local Google mock profile
+                if (!CognitoConfig.useLiveCognito) {
+                    currentUser = {
+                        username: 'Google User',
+                        email: 'google.user@gmail.com',
+                        token: `mock-google-token-${Date.now()}`,
+                        authMethod: 'Google Local Authentication'
+                    };
+                    saveData();
+                    showApp();
+                    loginError.textContent = '';
+                    toast('Signed in with Google (Local Auth)! Welcome, Google User', 'success');
+                    return;
+                }
+
                 loginError.textContent = 'Google OAuth 2.0 requires an HTTP/HTTPS origin (e.g. http://localhost:3000). Please serve the application via a web server.';
                 toast('Please run via HTTP/HTTPS server for Google OAuth', 'error');
                 return;
             }
 
-            // If GIS loaded, prompt Google One Tap / Sign-In popup
+            // Local / Demo Mode handling
+            if (!CognitoConfig.useLiveCognito) {
+                currentUser = {
+                    username: 'Google User',
+                    email: 'google.user@gmail.com',
+                    token: `mock-google-token-${Date.now()}`,
+                    authMethod: 'Google Local Authentication'
+                };
+                saveData();
+                showApp();
+                loginError.textContent = '';
+                toast('Signed in with Google! Welcome, Google User', 'success');
+                return;
+            }
+
+            // If GIS loaded in live Cognito mode, prompt Google One Tap / Sign-In popup
             if (window.google && window.google.accounts && window.google.accounts.id) {
                 initGoogleIdentityServices();
                 window.google.accounts.id.prompt((notification) => {
