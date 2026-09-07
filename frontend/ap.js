@@ -792,8 +792,10 @@
             pendingConfirmEmail = result.email;
             confirmEmailDisplay.textContent = pendingConfirmEmail;
 
-            if (result.code) {
-                codeHint.innerHTML = `<i class="fas fa-paper-plane"></i> Verification code sent to <strong>${pendingConfirmEmail}</strong>. Please check your inbox.`;
+            if (CognitoConfig.useLiveCognito) {
+                codeHint.innerHTML = `<i class="fas fa-paper-plane"></i> Verification code sent to <strong>${pendingConfirmEmail}</strong> by Amazon Cognito. Please check your inbox / spam folder.`;
+            } else if (result.code) {
+                codeHint.innerHTML = `<i class="fas fa-key"></i> [Demo Mode] Test Verification Code: <code>${result.code}</code> (or <code>123456</code>)`;
             } else {
                 codeHint.textContent = '';
             }
@@ -842,8 +844,10 @@
         if (!pendingConfirmEmail) return;
         try {
             const res = await cognitoAuth.resendSignUpCode(pendingConfirmEmail);
-            if (res.code) {
-                codeHint.innerHTML = `<i class="fas fa-paper-plane"></i> New verification code sent to <strong>${pendingConfirmEmail}</strong>. Please check your inbox.`;
+            if (CognitoConfig.useLiveCognito) {
+                codeHint.innerHTML = `<i class="fas fa-paper-plane"></i> New verification code sent to <strong>${pendingConfirmEmail}</strong> by Amazon Cognito. Please check your inbox / spam folder.`;
+            } else if (res.code) {
+                codeHint.innerHTML = `<i class="fas fa-key"></i> [Demo Mode] New Test Verification Code: <code>${res.code}</code> (or <code>123456</code>)`;
             }
             toast(`Resent verification code to ${pendingConfirmEmail}`, 'info');
         } catch (err) {
