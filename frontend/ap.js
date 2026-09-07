@@ -793,7 +793,7 @@
             confirmEmailDisplay.textContent = pendingConfirmEmail;
 
             if (result.code) {
-                codeHint.innerHTML = `<i class="fas fa-key"></i> Verification code sent: <code>${result.code}</code>`;
+                codeHint.innerHTML = `<i class="fas fa-paper-plane"></i> Verification code sent to <strong>${pendingConfirmEmail}</strong>. Please check your inbox.`;
             } else {
                 codeHint.textContent = '';
             }
@@ -843,7 +843,7 @@
         try {
             const res = await cognitoAuth.resendSignUpCode(pendingConfirmEmail);
             if (res.code) {
-                codeHint.innerHTML = `<i class="fas fa-key"></i> New verification code sent: <code>${res.code}</code>`;
+                codeHint.innerHTML = `<i class="fas fa-paper-plane"></i> New verification code sent to <strong>${pendingConfirmEmail}</strong>. Please check your inbox.`;
             }
             toast(`Resent verification code to ${pendingConfirmEmail}`, 'info');
         } catch (err) {
