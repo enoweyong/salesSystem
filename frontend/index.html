@@ -215,6 +215,43 @@
             width: 100%;
             justify-content: center;
         }
+        .btn-google {
+            background: #ffffff;
+            color: #333333;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        .btn-google:hover {
+            background: #f8fafc;
+            color: #111111;
+            border-color: #cbd5e1;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+        }
+        .btn-google i {
+            color: #ea4335;
+        }
+        .auth-divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 18px 0 10px;
+            color: var(--text-dim);
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.05em;
+        }
+        .auth-divider::before,
+        .auth-divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .auth-divider span {
+            padding: 0 12px;
+        }
         .btn:disabled {
             opacity: 0.45;
             cursor: not-allowed;
@@ -1128,6 +1165,14 @@
                 </div>
                 <button type="submit" class="btn btn-primary"><i class="fas fa-sign-in-alt"></i> Sign In</button>
                 <div class="error-msg" id="loginError"></div>
+
+                <div class="auth-divider">
+                    <span>OR</span>
+                </div>
+
+                <button type="button" class="btn btn-google btn-block" id="googleSignInBtn">
+                    <i class="fab fa-google"></i> Sign in with Google
+                </button>
 
                 <div class="auth-footer">
                     <div><a id="toForgotPasswordLink">Forgot Password?</a></div>

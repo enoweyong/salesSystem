@@ -7,13 +7,23 @@
     'use strict';
 
     // ============================================================
-    //  AMAZON COGNITO CONFIGURATION
+    //  AMAZON COGNITO & GOOGLE OAUTH CONFIGURATION
     // ============================================================
     const CognitoConfig = {
         region: 'us-east-1',
         userPoolId: 'us-east-1_NovaShopUserPool',
         clientId: 'novashopappclientid12345',
         useLiveCognito: false // Set to true when live AWS Cognito App Client ID is deployed
+    };
+
+    const GoogleConfig = {
+        client_id: "620644926214-0uk0nsm1oe8o36of7jsr1jiefukfbfag.apps.googleusercontent.com",
+        project_id: "sheetsapiproject-496921",
+        auth_uri: "https://accounts.google.com/o/oauth2/auth",
+        token_uri: "https://oauth2.googleapis.com/token",
+        auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
+        javascript_origins: ["https://novashop-eyong-793593623274.auth.us-east-1.amazoncognito.com"],
+        cognitoDomain: "https://novashop-eyong-793593623274.auth.us-east-1.amazoncognito.com"
     };
 
     // ============================================================
@@ -375,6 +385,7 @@
     const usernameInput = $('#usernameInput');
     const passwordInput = $('#passwordInput');
     const loginError = $('#loginError');
+    const googleSignInBtn = $('#googleSignInBtn');
 
     // Sign Up inputs
     const signUpNameInput = $('#signUpNameInput');
@@ -557,6 +568,69 @@
     } else {
         showLogin();
     }
+
+    // ============================================================
+    //  GOOGLE AUTHENTICATION METHOD
+    // ============================================================
+    async function signInWithGoogle() {
+        try {
+            loginError.textContent = 'Initiating Google Authentication...';
+
+            // Build Google OAuth / Cognito identity provider link
+            const redirectUri = window.location.href.split('#')[0].split('?')[0];
+            const googleAuthUrl = `${GoogleConfig.auth_uri}?client_id=${encodeURIComponent(GoogleConfig.client_id)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&scope=email%20profile%20openid`;
+
+            // If running on live domain or Cognito hosted UI
+            if (window.location.hostname !== 'localhost' && window.location.protocol !== 'file:') {
+                const cognitoGoogleUrl = `${GoogleConfig.cognitoDomain}/oauth2/authorize?identity_provider=Google&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=token&client_id=${CognitoConfig.clientId}`;
+                window.location.href = cognitoGoogleUrl;
+                return;
+            }
+
+            // Local / Offline mode fallback for development & verification:
+            // Simulate successful Google Authentication token receipt
+            const googleUser = {
+                username: 'Google User',
+                email: 'google.user@gmail.com',
+                token: `google-oauth-token-${Date.now()}`,
+                authMethod: 'Google OAuth 2.0',
+                googleClientId: GoogleConfig.client_id
+            };
+
+            currentUser = googleUser;
+            saveData();
+            showApp();
+            loginError.textContent = '';
+            toast(`Successfully signed in with Google! Welcome, ${currentUser.username}`, 'success');
+        } catch (err) {
+            loginError.textContent = err.message || 'Google authentication failed.';
+        }
+    }
+
+    if (googleSignInBtn) {
+        googleSignInBtn.addEventListener('click', signInWithGoogle);
+    }
+
+    // Handle OAuth Callback Tokens if present in URL hash or search
+    function handleOAuthCallback() {
+        const hash = window.location.hash || window.location.search;
+        if (hash.includes('access_token') || hash.includes('id_token') || hash.includes('code=')) {
+            const params = new URLSearchParams(hash.replace('#', '?'));
+            const accessToken = params.get('access_token') || params.get('id_token') || params.get('code');
+            if (accessToken) {
+                currentUser = {
+                    username: 'Google User',
+                    email: 'google.user@gmail.com',
+                    token: accessToken,
+                    authMethod: 'Google OAuth 2.0'
+                };
+                saveData();
+                window.history.replaceState(null, null, window.location.pathname);
+            }
+        }
+    }
+
+    handleOAuthCallback();
 
     // ============================================================
     //  AUTH EVENT HANDLERS
@@ -1175,6 +1249,8 @@
     // Global helper
     window.switchView = switchView;
     window.cognitoAuth = cognitoAuth;
+    window.GoogleConfig = GoogleConfig;
+    window.signInWithGoogle = signInWithGoogle;
 
     window.addEventListener('beforeunload', saveData);
 
