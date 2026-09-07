@@ -16,13 +16,28 @@
         useLiveCognito: false // Set to true when live AWS Cognito App Client ID is deployed
     };
 
+    const currentOrigin = (window.location.origin && window.location.origin !== 'null' && window.location.origin !== 'file://')
+        ? window.location.origin
+        : '';
+
     const GoogleConfig = {
         client_id: "620644926214-0uk0nsm1oe8o36of7jsr1jiefukfbfag.apps.googleusercontent.com",
         project_id: "sheetsapiproject-496921",
         auth_uri: "https://accounts.google.com/o/oauth2/auth",
         token_uri: "https://oauth2.googleapis.com/token",
         auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
-        javascript_origins: ["https://novashop-eyong-793593623274.auth.us-east-1.amazoncognito.com"],
+        javascript_origins: Array.from(new Set([
+            "https://novashop-eyong-793593623274.auth.us-east-1.amazoncognito.com",
+            "http://localhost",
+            "http://localhost:3000",
+            "http://localhost:8080",
+            "http://localhost:5000",
+            "http://localhost:8000",
+            "http://127.0.0.1:5500",
+            "http://127.0.0.1:8080",
+            "http://127.0.0.1:3000",
+            ...(currentOrigin ? [currentOrigin] : [])
+        ])),
         cognitoDomain: "https://novashop-eyong-793593623274.auth.us-east-1.amazoncognito.com"
     };
 
@@ -607,6 +622,12 @@
     async function signInWithGoogle() {
         try {
             loginError.textContent = 'Initiating Google Authentication...';
+
+            if (window.location.protocol === 'file:') {
+                loginError.textContent = 'Google OAuth 2.0 requires an HTTP/HTTPS origin (e.g. http://localhost:3000). Please serve the application via a web server.';
+                toast('Please run via HTTP/HTTPS server for Google OAuth', 'error');
+                return;
+            }
 
             // If GIS loaded, prompt Google One Tap / Sign-In popup
             if (window.google && window.google.accounts && window.google.accounts.id) {
